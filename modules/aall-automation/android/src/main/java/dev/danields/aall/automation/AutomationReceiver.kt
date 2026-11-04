@@ -5,8 +5,12 @@ import android.content.Intent
 
 class AutomationReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
-    val engine = Engine(context)
-    if (intent.action == Intent.ACTION_POWER_CONNECTED) engine.charging()
-    engine.reconcile()
+    // Android 17 sends the power action before it updates the sticky battery status.
+    val plugged = when (intent.action) {
+      Intent.ACTION_POWER_CONNECTED -> true
+      Intent.ACTION_POWER_DISCONNECTED -> false
+      else -> null
+    }
+    Engine(context).reconcile(plugged)
   }
 }
