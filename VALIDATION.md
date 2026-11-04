@@ -31,6 +31,10 @@ Physical phone, on the build rebased onto `Reconcile`:
 - Leaving an edited routine asked to discard. Keep editing preserved the change. A weekly save persisted after reopening and was restored afterward.
 - Native time and date dialogs opened, and the date dialog started at the earliest bookable date. A day off was booked and cancelled.
 - A wrong answer showed an inline error and kept the same sum. The right answer showed Paused on Today. Check answer stayed above the keyboard.
+- Starting Focus showed the running heading with no Start button and turned on DND and grayscale. Solving the sum showed Paused with Start still hidden and released both. Disabling Focus showed Set up focus.
+- The seven weekday buttons fit at a display width of 320dp.
+
+`uiautomator dump` suspends accessibility services while it runs, so aall briefly reports accessibility as missing during UI automation. Confirm that state from a screenshot taken without a dump.
 
 ## Remaining verification
 
