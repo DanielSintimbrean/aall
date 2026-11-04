@@ -19,7 +19,9 @@
 - Focus activated Android's implicit `dev.danields.aall` DND rule.
 - Accessibility service bound after allowing Android restricted settings, alongside the existing launcher service.
 - Adding Chrome to Focus's blocked list displayed the native full-screen blocking overlay when Chrome launched. The overlay offered Home and a route back to aall.
-- Bypass and DND release checks are in progress.
+- Wrong arithmetic answers kept the same challenge. The correct answer displayed a 15-minute pause, deactivated aall's implicit DND rule and restored grayscale enabled/mode to 0/0.
+- Other Android DND rules remained present. An independently active competing DND rule was not toggled for testing.
+- Test state was cleared before installing the final build with all routines disabled.
 
 ## Remaining verification
 
