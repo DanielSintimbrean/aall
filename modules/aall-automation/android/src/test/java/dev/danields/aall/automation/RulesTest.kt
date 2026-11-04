@@ -100,6 +100,37 @@ class RulesTest {
     )
   }
 
+  @Test fun earliestDayOffIsTheFirstMidnightAtLeast72HoursAway() {
+    val start = LocalDate.parse("2026-03-30").atStartOfDay(zone).toInstant().toEpochMilli()
+    val exact = start - 72 * 3600000
+    assertEquals(LocalDate.parse("2026-03-30"), Rules.earliestDayOff(exact, zone))
+    assertEquals(LocalDate.parse("2026-03-31"), Rules.earliestDayOff(exact + 1, zone))
+    assertEquals(
+      LocalDate.parse("2026-03-31"),
+      Rules.earliestDayOff(time("2026-03-27T12:00:00+01:00[Europe/Madrid]"), zone)
+    )
+  }
+
+  @Test fun earliestDayOffAgreesWithCanBookAcrossClockChanges() {
+    // Havana's clocks skip midnight on 2026-03-08, so that day starts at 01:00.
+    for (id in listOf("Europe/Madrid", "America/Havana", "UTC")) {
+      val tz = ZoneId.of(id)
+      val first = LocalDate.parse("2026-01-01").atStartOfDay(tz).toInstant().toEpochMilli()
+      for (halfHour in 0L until 365 * 48) {
+        val now = first + halfHour * 1800000 + 1
+        val earliest = Rules.earliestDayOff(now, tz)
+        assertTrue(Rules.canBook(earliest.toString(), now, tz))
+        assertFalse(Rules.canBook(earliest.minusDays(1).toString(), now, tz))
+      }
+    }
+    val havana = ZoneId.of("America/Havana")
+    val skipped = LocalDate.parse("2026-03-08").atStartOfDay(havana).toInstant().toEpochMilli()
+    assertEquals(
+      LocalDate.parse("2026-03-08"),
+      Rules.earliestDayOff(skipped - 72 * 3600000, havana)
+    )
+  }
+
   @Test fun arithmeticAlwaysSatisfiesBounds() {
     repeat(10000) {
       val (expression, answer) = Rules.challenge()

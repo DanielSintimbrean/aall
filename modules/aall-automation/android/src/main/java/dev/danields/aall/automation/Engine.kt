@@ -223,7 +223,7 @@ class Engine(private val context: Context) {
   }
 
   private fun snapshot(d: Decision): JSONObject {
-    val now = System.currentTimeMillis()
+    val clock = clock()
     val p = permissions()
     val failures = JSONArray(prefs.getString("effectFailures", "[]")).let { a ->
       (0 until a.length()).map(a::getString)
@@ -233,8 +233,9 @@ class Engine(private val context: Context) {
       .put("active", JSONArray(d.routines.map { it.kind.id }))
       .put("dayOff", d.dayOff)
       .put("daysOff", JSONArray(d.state.daysOff))
-      .put("focusUntil", now + d.focusRemaining)
-      .put("pauseUntil", now + d.pauseRemaining)
+      .put("earliestDayOff", Rules.earliestDayOff(clock.wall, clock.zone).toString())
+      .put("focusUntil", clock.wall + d.focusRemaining)
+      .put("pauseUntil", clock.wall + d.pauseRemaining)
       .put("nextChange", d.nextChange)
       .put(
         "permissions",
