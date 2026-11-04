@@ -7,7 +7,7 @@
 - Expo dependency compatibility check.
 - TypeScript strict typecheck, Vite+ formatting and lint, ktlint formatting and lint for Kotlin.
 - Four shared TypeScript tests for defaults, input validation and 72-hour booking boundaries.
-- 33 native JVM tests for overnight ownership, Only today, elapsed timers and reboot deadlines, overlapping requests, bypass suppression and expiry, retry verification, DST booking boundaries, timezone-aware temporary expiry, 10,000 generated arithmetic challenges, config parsing, charging-started bedtime, day-off transitions, DND ownership, blocking rules, routine status and next-change scheduling.
+- 41 native JVM tests for overnight ownership, Only today, elapsed timers and reboot deadlines, overlapping requests, bypass suppression and expiry, retry verification, DST booking boundaries, timezone-aware temporary expiry, 10,000 generated arithmetic challenges, config parsing, charging-started bedtime, day-off transitions, DND ownership, blocking rules, routine status, next-change scheduling and status notices.
 - Metro production Android export.
 - Independent arm64 standalone release APK build, including native compilation and Android release lint.
 - APK signed with persistent release certificate, installed and launched through ADB without Metro.
@@ -33,6 +33,24 @@ Physical phone, on the build rebased onto `Reconcile`:
 - A wrong answer showed an inline error and kept the same sum. The right answer showed Paused on Today. Check answer stayed above the keyboard.
 - Starting Focus showed the running heading with no Start button and turned on DND and grayscale. Solving the sum showed Paused with Start still hidden and released both. Disabling Focus showed Set up focus.
 - The seven weekday buttons fit at a display width of 320dp.
+
+## Status notification checks
+
+Physical phone, release-signed build installed over 0.1.1 with settings preserved:
+
+- The Notifications row in Phone setup opened Android's app notification settings. Turning them on granted `POST_NOTIFICATIONS`, and the row and Today updated on return.
+- With every routine off, aall posted no notification.
+- During a one-minute Focus, with `zen_mode` 1 from aall's own rule, the shade showed Focus with a running countdown. Android logged `not_intercepted … priorityApp`, with `mIntercept=false` and `mBypassDnd=true`.
+- When the timer ended, the notification went away and DND and grayscale were released.
+- Swiping it away during Focus held through going home and reopening aall. Android logged one post per session, so app switches did not repost it.
+- Solving the sum showed Paused with a 15-minute countdown. Installing an update during the pause kept the notification and its deadline. When the pause ended, the notification went away.
+
+The checks above ran on a build that also set a notification timeout and public lock-screen visibility. Both were removed afterward, so this was repeated on the final build:
+
+- During a one-minute Focus under the phone's own scheduled DND rule, the shade showed the countdown with `mIntercept=false`.
+- With the launcher in the foreground and no interaction, the alarm alone cleared the notification and released grayscale. The other DND rule stayed on.
+
+Not tested on the phone: the lock screen, App access, Bedtime and Grayscale notices, day off, needs setup and granting DND access after the channel exists. JVM tests cover the wording and priority of those notices.
 
 `uiautomator dump` suspends accessibility services while it runs, so aall briefly reports accessibility as missing during UI automation. Confirm that state from a screenshot taken without a dump.
 

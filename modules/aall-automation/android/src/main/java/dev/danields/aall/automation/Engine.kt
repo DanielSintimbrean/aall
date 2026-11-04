@@ -19,6 +19,7 @@ import org.json.JSONObject
 class Engine(private val context: Context) {
   private val store = Store(context)
   private val prefs get() = store.prefs
+  private val status get() = StatusNotifier(context, prefs)
   private val alarm get() = context.getSystemService(AlarmManager::class.java)
   private val notification get() = context.getSystemService(NotificationManager::class.java)
 
@@ -114,7 +115,8 @@ class Engine(private val context: Context) {
 
   fun reconcile(plugged: Boolean? = null) {
     val before = store.load()
-    val decision = Reconcile.decide(before, environment(plugged))
+    val env = environment(plugged)
+    val decision = Reconcile.decide(before, env)
     store.save(before, decision.state)
     val failures = mutableListOf<String>()
     decision.setDnd?.let { wanted ->
@@ -134,6 +136,11 @@ class Engine(private val context: Context) {
     }
     AallAccessibilityService.instance?.update(decision)
     scheduleAlarm(decision.nextChange)
+    try {
+      status.show(StatusNotice.of(decision, env.clock, failures))
+    } catch (ex: Exception) {
+      failures.add("Notification: ${ex.message}")
+    }
     put("effectFailures", JSONArray(failures).toString())
   }
 
@@ -235,6 +242,7 @@ class Engine(private val context: Context) {
           "accessibility",
           p.accessibility
         ).put("dnd", p.dnd).put("alarms", p.alarms).put("grayscale", p.grayscale)
+          .put("notifications", status.enabled())
       )
       .put(
         "overrides",

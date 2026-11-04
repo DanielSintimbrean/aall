@@ -20,7 +20,13 @@ export type Snapshot = {
   focusUntil: number;
   pauseUntil: number;
   nextChange: number;
-  permissions: { accessibility: boolean; dnd: boolean; alarms: boolean; grayscale: boolean };
+  permissions: {
+    accessibility: boolean;
+    dnd: boolean;
+    alarms: boolean;
+    notifications: boolean;
+    grayscale: boolean;
+  };
   errors: string[];
   statuses: Record<RoutineId, RoutineStatus>;
   overrides: Partial<Record<RoutineId, Routine>>;
