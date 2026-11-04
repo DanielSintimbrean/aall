@@ -11,8 +11,10 @@ class AallAutomationModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("AallAutomation")
     Function("initialize") { raw: String -> Engine(context).initialize(raw) }
-    Function("getSnapshot") { Engine(context).reconcile().toString() }
+    Function("getSnapshot") { Engine(context).snapshot().toString() }
+    Function("reconcile") { Engine(context).reconcile() }
     Function("setConfig") { raw: String -> Engine(context).setConfig(raw) }
+    Function("saveWeekly") { raw: String -> Engine(context).saveWeekly(raw) }
     Function("startFocus") { Engine(context).focus() }
     Function("challenge") { Engine(context).challenge() }
     Function("solve") { answer: String -> Engine(context).solve(answer) }

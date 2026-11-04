@@ -1,12 +1,11 @@
 package dev.danields.aall.automation
 import org.junit.Test
 import org.junit.Assert.*
-import org.json.JSONObject
 import java.time.*
 class RulesTest {
   private val zone=ZoneId.of("Europe/Madrid")
   private fun time(s:String)=ZonedDateTime.parse(s).toInstant().toEpochMilli()
-  private fun routine()=JSONObject("""{"enabled":true,"windows":[{"start":"22:30","end":"07:00","days":[1]}]}""")
+  private fun routine()=Routine(RoutineKind.BEDTIME,"Bedtime",true,listOf(Window(LocalTime.of(22,30),LocalTime.of(7,0),listOf(1))),emptyList(),emptyList(),LocalTime.of(20,0))
   @Test fun timersUseElapsedWithinBootAndWallOnRecovery() {
     assertEquals(500L,Rules.remaining(true,1000,500,9000,999999,1000))
     assertEquals(0L,Rules.remaining(true,1000,1000,9000,0,1000))
@@ -15,10 +14,10 @@ class RulesTest {
   }
   @Test fun bypassAndDayOffSuppressAllOwnersUntilExpiry() {
     assertTrue(Rules.suppress(true,0));assertTrue(Rules.suppress(false,1));assertFalse(Rules.suppress(false,0))
-    assertTrue(Rules.requests("bedtime",true,0,0,100))
-    assertFalse(Rules.requests("focus",false,0,0,100))
-    assertTrue(Rules.requests("bedtime",false,0,200,100))
-    assertFalse(Rules.requests("bedtime",false,0,200,200))
+    assertTrue(RoutineKind.BEDTIME.runs(true,0,0,100))
+    assertFalse(RoutineKind.FOCUS.runs(false,0,0,100))
+    assertTrue(RoutineKind.BEDTIME.runs(false,0,200,100))
+    assertFalse(RoutineKind.BEDTIME.runs(false,0,200,200))
   }
   @Test fun wrongAnswersRetrySameExpectedValue() {
     assertFalse(Rules.verifies("123",456));assertFalse(Rules.verifies("456.0",456));assertTrue(Rules.verifies("456",456))
@@ -30,9 +29,10 @@ class RulesTest {
     assertEquals(3600000L,utc-madrid)
   }
   @Test fun colorExceptionDoesNotReleaseAnotherOwnersGrayscale() {
-    assertFalse(Rules.grayRequest("grayscale",true))
-    assertTrue(listOf(Rules.grayRequest("grayscale",true),Rules.grayRequest("focus",false)).any{it})
-    assertFalse(Rules.grayRequest("access",false))
+    fun kind(kind: RoutineKind,colorApps: List<String>)=routine().copy(kind=kind,colorApps=colorApps)
+    assertFalse(kind(RoutineKind.GRAYSCALE,listOf("maps")).requestsGrayscale("maps"))
+    assertTrue(kind(RoutineKind.FOCUS,emptyList()).requestsGrayscale("maps"))
+    assertFalse(kind(RoutineKind.ACCESS,emptyList()).requestsGrayscale("maps"))
   }
   @Test fun overnightBelongsToStartingWeekday() {
     assertTrue(Rules.active(routine(),time("2026-11-03T06:59:00+01:00[Europe/Madrid]"),zone))
@@ -57,5 +57,20 @@ class RulesTest {
       assertTrue(answer in -999..999)
       assertEquals(parts[0].toInt()+(if(parts[1]=="+")1 else -1)*parts[2].toInt()+(if(parts[3]=="+")1 else -1)*parts[4].toInt(),answer)
     }
+  }
+  private fun config(routines: String)="""{"version":1,"focusMinutes":50,"routines":[$routines]}"""
+  private fun stored(id: String, windows: String="[]", extra: String="")="""{"id":"$id","title":"$id","enabled":false,"windows":$windows,"apps":["com.example.app"],"colorApps":[],"earlyStart":"20:00"$extra}"""
+  private val validRoutines=listOf(stored("access"),stored("focus"),stored("grayscale"),stored("bedtime","""[{"start":"22:30","end":"07:00","days":[1,3]}]"""))
+  @Test fun storedConfigSurvivesRoundTrip() {
+    val parsed=Config.parse(config(validRoutines.joinToString(",")))
+    assertEquals(parsed,Config.parse(parsed.toJson().toString()))
+    val bedtime=parsed.routines.first{it.kind==RoutineKind.BEDTIME}
+    assertEquals(listOf(1,3),bedtime.windows[0].days)
+    assertEquals("22:30",bedtime.toJson().getJSONArray("windows").getJSONObject(0).getString("start"))
+  }
+  @Test(expected=IllegalArgumentException::class) fun configNeedsEveryKind() { Config.parse(config(validRoutines.drop(1).joinToString(","))) }
+  @Test(expected=IllegalArgumentException::class) fun bedtimeNeedsOneWindow() { Config.parse(config((validRoutines.dropLast(1)+stored("bedtime")).joinToString(","))) }
+  @Test(expected=IllegalArgumentException::class) fun earlyStartStartsAtTwenty() {
+    Routine.parse(org.json.JSONObject(stored("focus").replace("20:00","19:59")))
   }
 }

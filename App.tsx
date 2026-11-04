@@ -20,12 +20,14 @@ import { StatusBar } from "expo-status-bar";
 import {
   defaults,
   earliestDay,
+  editors,
+  statusLabels,
   validTime,
   type InstalledApp,
   type Routine,
   type Snapshot,
 } from "./src/model";
-import { native, saveConfig, saveToday, snapshot } from "./src/native";
+import { native, saveConfig, saveToday, saveWeekly, snapshot } from "./src/native";
 
 function Button({ title, onPress }: { title: string; onPress(): void }) {
   return (
@@ -72,10 +74,7 @@ function AppContent() {
   const [answer, setAnswer] = useState("");
   const [minutes, setMinutes] = useState("50");
   const refresh = useCallback(() => {
-    if (native) {
-      const s = snapshot();
-      setState(s);
-    }
+    if (native) setState(snapshot());
   }, []);
   const act = (fn: () => void) => {
     try {
@@ -87,9 +86,9 @@ function AppContent() {
   };
   useEffect(() => {
     if (native) {
-      const installed = native!.installedApps();
+      const installed = native.installedApps();
       const packages = new Set(installed.map((app) => app.packageName));
-      native!.initialize(
+      native.initialize(
         JSON.stringify({
           ...defaults,
           routines: defaults.routines.map((r) => ({
@@ -99,11 +98,15 @@ function AppContent() {
           })),
         }),
       );
+      native.reconcile();
       refresh();
-      setApps(native!.installedApps());
+      setApps(installed);
     }
     const timer = setInterval(refresh, 1000);
-    const sub = AppState.addEventListener("change", refresh);
+    const sub = AppState.addEventListener("change", (appState) => {
+      if (appState === "active") native?.reconcile();
+      refresh();
+    });
     return () => {
       clearInterval(timer);
       sub.remove();
@@ -113,9 +116,7 @@ function AppContent() {
     return (
       <SafeAreaView className="flex-1 bg-zinc-950 p-6">
         <Text className="text-white text-2xl">Install the aall Android APK</Text>
-        <Text className="text-zinc-400">
-          Automation needs the local Kotlin module. Expo Go cannot run it.
-        </Text>
+        <Text className="text-zinc-400">Expo Go cannot run aall.</Text>
       </SafeAreaView>
     );
   const save = (today: boolean) =>
@@ -124,11 +125,7 @@ function AppContent() {
       if (routine.windows.some((w) => !validTime(w.start) || !validTime(w.end)))
         throw Error("Use HH:mm times.");
       if (today) saveToday(routine);
-      else
-        saveConfig({
-          ...state.config,
-          routines: state.config.routines.map((r) => (r.id === routine.id ? routine : r)),
-        });
+      else saveWeekly(routine);
       setRoutine(undefined);
       setPage("today");
     });
@@ -138,6 +135,7 @@ function AppContent() {
     setPage("edit");
   };
   const remaining = (until: number) => Math.max(0, Math.ceil((until - Date.now()) / 60000));
+  const editor = routine && editors[routine.id];
   return (
     <SafeAreaView className="flex-1 bg-zinc-950">
       <StatusBar style="light" />
@@ -145,12 +143,7 @@ function AppContent() {
         <View className="flex-row items-center justify-between mb-6">
           <Text className="text-white text-4xl font-bold">aall</Text>
           {page !== "today" && (
-            <Button
-              title="Back"
-              onPress={() => {
-                setPage(page === "apps" ? "edit" : "today");
-              }}
-            />
+            <Button title="Back" onPress={() => setPage(page === "apps" ? "edit" : "today")} />
           )}
         </View>
         {page === "today" && (
@@ -172,43 +165,34 @@ function AppContent() {
                     : "Time is yours"}
             </Text>
             <Text className="text-zinc-400 mb-4">
-              Next schedule boundary {new Date(state.nextChange).toLocaleString()}
+              Next change {new Date(state.nextChange).toLocaleString()}
             </Text>
             {state.errors.map((error) => (
               <Text key={error} className="text-amber-300 mb-2">
                 {error}
               </Text>
             ))}
-            {state.config.routines.map((r) => (
-              <Pressable
-                key={r.id}
-                onPress={() => edit(r)}
-                className="bg-zinc-900 rounded-2xl p-5 my-2"
-              >
-                <View className="flex-row justify-between">
-                  <Text className="text-white text-xl">{r.title}</Text>
-                  <Text className="text-teal-300">
-                    {!r.enabled
-                      ? "Disabled"
-                      : !state.permissions.alarms ||
-                          ((r.id !== "grayscale" || r.colorApps.length > 0) &&
-                            !state.permissions.accessibility) ||
-                          (r.id !== "access" && !state.permissions.grayscale) ||
-                          (["focus", "bedtime"].includes(r.id) && !state.permissions.dnd)
-                        ? "Needs setup"
-                        : state.active.includes(r.id)
-                          ? "Active"
-                          : "Ready"}
+            {state.config.routines
+              .map((weekly) => state.overrides[weekly.id] ?? weekly)
+              .map((r) => (
+                <Pressable
+                  key={r.id}
+                  onPress={() => edit(r)}
+                  className="bg-zinc-900 rounded-2xl p-5 my-2"
+                >
+                  <View className="flex-row justify-between">
+                    <Text className="text-white text-xl">{r.title}</Text>
+                    <Text className="text-teal-300">{statusLabels[state.statuses[r.id]]}</Text>
+                  </View>
+                  <Text className="text-zinc-400 mt-2">
+                    {editors[r.id].session
+                      ? `${state.config.focusMinutes} minutes · ${remaining(state.focusUntil)} remaining`
+                      : r.windows.map((w) => `${w.start}–${w.end}`).join(" · ")}
+                    {editors[r.id].cardNote}
+                    {state.overrides[r.id] ? " · only today" : ""}
                   </Text>
-                </View>
-                <Text className="text-zinc-400 mt-2">
-                  {r.id === "focus"
-                    ? `${state.config.focusMinutes} minutes · ${remaining(state.focusUntil)} remaining`
-                    : r.windows.map((w) => `${w.start}–${w.end}`).join(" · ")}
-                  {r.id === "access" ? " · allowed hours" : ""}
-                </Text>
-              </Pressable>
-            ))}
+                </Pressable>
+              ))}
             <Button title="Start focus" onPress={() => act(() => native!.startFocus())} />
             <Button
               title="Pause for 15 minutes"
@@ -224,7 +208,7 @@ function AppContent() {
             <Button title="Phone setup" onPress={() => setPage("setup")} />
           </>
         )}
-        {page === "edit" && routine && (
+        {page === "edit" && routine && editor && (
           <>
             <Text className="text-white text-3xl mb-4">{routine.title}</Text>
             <View className="flex-row justify-between items-center">
@@ -234,14 +218,8 @@ function AppContent() {
                 onValueChange={(enabled) => setRoutine({ ...routine, enabled })}
               />
             </View>
-            <Text className="text-zinc-400 mt-3">
-              {routine.id === "access"
-                ? "Selected apps are blocked outside allowed hours."
-                : routine.id === "bedtime"
-                  ? "Apps outside the allowed list are blocked. Charging can start bedtime early."
-                  : "Active hours follow the starting weekday, including overnight."}
-            </Text>
-            {routine.id === "focus" && (
+            {editor.hint && <Text className="text-zinc-400 mt-3">{editor.hint}</Text>}
+            {editor.session && (
               <>
                 <Field
                   label="Focus duration in minutes"
@@ -264,7 +242,7 @@ function AppContent() {
             {routine.windows.map((w, i) => (
               <View key={i} className="bg-zinc-900 p-4 rounded-xl my-3">
                 <Text className="text-teal-300">
-                  {routine.id === "access" ? "Allowed hours" : "Active hours"} {i + 1}
+                  {editor.windowLabel} {i + 1}
                 </Text>
                 {(["start", "end"] as const).map((key) => (
                   <Field
@@ -307,7 +285,7 @@ function AppContent() {
                     </Pressable>
                   ))}
                 </View>
-                {routine.id !== "bedtime" && (
+                {editor.windowCountEditable && (
                   <Button
                     title="Remove window"
                     onPress={() =>
@@ -317,7 +295,7 @@ function AppContent() {
                 )}
               </View>
             ))}
-            {!["focus", "bedtime"].includes(routine.id) && (
+            {editor.windowCountEditable && (
               <Button
                 title="Add hours"
                 onPress={() =>
@@ -331,16 +309,16 @@ function AppContent() {
                 }
               />
             )}
-            {routine.id === "bedtime" && (
+            {editor.chargingStart && (
               <Field
                 label="Charging may start bedtime after · HH:mm, at least 20:00"
                 value={routine.earlyStart}
                 onChangeText={(earlyStart) => setRoutine({ ...routine, earlyStart })}
               />
             )}
-            {routine.id !== "grayscale" && (
+            {editor.appList && (
               <Button
-                title={`${routine.id === "bedtime" ? "Allowed" : "Blocked"} apps · ${routine.apps.length}`}
+                title={`${editor.appList} apps · ${routine.apps.length}`}
                 onPress={() => {
                   setList("apps");
                   setQuery("");
@@ -348,7 +326,7 @@ function AppContent() {
                 }}
               />
             )}
-            {routine.id !== "access" && (
+            {editor.colorExceptions && (
               <Button
                 title={`Keep color in apps · ${routine.colorApps.length}`}
                 onPress={() => {
@@ -359,13 +337,7 @@ function AppContent() {
               />
             )}
             <Button title="Save weekly settings" onPress={() => save(false)} />
-            {routine.id !== "focus" && (
-              <Button title="Apply only today" onPress={() => save(true)} />
-            )}
-            <Text className="text-zinc-500 mt-2">
-              Only today lasts through the end of an overnight occurrence. Weekly settings resume
-              afterward.
-            </Text>
+            {!editor.session && <Button title="Apply only today" onPress={() => save(true)} />}
           </>
         )}
         {page === "apps" && routine && (
@@ -408,7 +380,7 @@ function AppContent() {
               onPress={() =>
                 act(() => {
                   if (native!.solve(answer)) setPage("today");
-                  else Alert.alert("Try again", "The same expression stays until you solve it.");
+                  else Alert.alert("Try again");
                 })
               }
             />
@@ -418,8 +390,8 @@ function AppContent() {
           <>
             <Text className="text-white text-3xl">Days off</Text>
             <Text className="text-zinc-400 my-4">
-              All restrictions pause midnight to midnight. Book at least 72 elapsed hours ahead.
-              Earliest eligible date: {earliestDay()}.
+              Restrictions pause from midnight to midnight. Book at least 72 hours ahead. Earliest
+              date: {earliestDay()}.
             </Text>
             <Field label="Date · YYYY-MM-DD" value={date} onChangeText={setDate} />
             <Button title="Book day off" onPress={() => act(() => native!.bookDay(date))} />
@@ -430,9 +402,6 @@ function AppContent() {
                 onPress={() => act(() => native!.cancelDay(d))}
               />
             ))}
-            <Text className="text-zinc-500">
-              To move a booking, cancel it and book a new eligible date.
-            </Text>
           </>
         )}
         {page === "setup" && (
@@ -450,9 +419,8 @@ function AppContent() {
               android.permission.WRITE_SECURE_SETTINGS
             </Text>
             <Text className="text-zinc-400">
-              For sideloaded apps, Android may require Allow restricted settings in app info before
-              accessibility can be enabled. Grayscale on GrapheneOS needs physical verification.
-              Settings remaining accessible is intentional.
+              Sideloaded apps may need Allow restricted settings in app info before accessibility
+              can be enabled.
             </Text>
             <Button
               title="Test grayscale for 10 seconds"

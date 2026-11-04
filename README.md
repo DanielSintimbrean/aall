@@ -1,8 +1,8 @@
 # aall
 
-Personal Android routines with on-phone editing. React Native, Expo and Uniwind provide the UI; a local Kotlin Expo module owns persistence, scheduling and enforcement. No account or backend. The approved behavior is in [DESIGN.md](DESIGN.md).
+Personal Android routines with on-phone editing. React Native, Expo and Uniwind provide the UI; a local Kotlin Expo module owns persistence, scheduling and enforcement. No account or backend. [DESIGN.md](DESIGN.md) specifies the behavior.
 
-All routines start disabled. Today shows scheduled activity and missing permissions. Editors configure allowed hours for app access, active grayscale hours, bedtime, weekdays and per-routine app lists. Focus defaults to 50 minutes. An arithmetic challenge pauses every restriction for 15 minutes. Days off suppress all restrictions for a local calendar date and require 72 elapsed hours of notice.
+All routines start disabled. Today shows scheduled activity, missing permissions and any "only today" hours in effect. Saving weekly settings ends that routine's "only today" change. Editors configure allowed hours for app access, active grayscale hours, bedtime, weekdays and per-routine app lists. Focus defaults to 50 minutes. An arithmetic challenge pauses every restriction for 15 minutes. Days off suppress all restrictions for a local calendar date and require 72 elapsed hours of notice.
 
 ## Development
 
@@ -30,7 +30,7 @@ adb shell pm grant dev.danields.aall android.permission.WRITE_SECURE_SETTINGS
 
 The setup screen has a ten-second grayscale test and manual restoration. Permission and secure-setting readback alone do not prove that GrapheneOS displays grayscale. Verify on the physical phone. Android Settings, phone calls, the launcher and aall remain accessible. This provides personal friction, not tamper-proof enforcement.
 
-Schedules use local wall time and the starting weekday. Focus and bypass use elapsed time during a boot and recover their remaining wall-clock deadline on reboot. Native alarms, boot/time broadcasts and accessibility events reconcile state without React running. Android force-stop suspends an app until the next launch. Day-off midnight boundaries release aall's restrictions without releasing another app's DND rule.
+Schedules use local wall time and the starting weekday. Focus and bypass use elapsed time during a boot and recover their remaining wall-clock deadline on reboot. Native alarms, boot/time broadcasts and accessibility events reconcile state without React running. The app reconciles after each action and when it returns to the foreground, and its one-second snapshot poll only reads. Android force-stop suspends an app until the next launch. Day-off midnight boundaries release aall's restrictions without releasing another app's DND rule.
 
 ## Releases
 
@@ -38,8 +38,8 @@ The public repository is https://github.com/DanielSintimbrean/aall. Builds and r
 
 Run `pnpm release` after committing the new version. It uses the local signing files in `~/.local/share/aall/signing/`. Override `AALL_KEYSTORE` and `AALL_PASSWORD_FILE` to use different private paths. The script runs checks, builds the standalone APK, signs it, verifies its signature and alignment, and publishes it to GitHub Releases. Bump `package.json` and `app.config.ts` versions before each new release. Version codes default to Unix seconds, increasing across releases. Do not release twice with the same tag.
 
-The signing key is stored locally at `/home/danields/.local/share/aall/signing/aall.jks`. Keep a private backup of it and its password. The password file has mode 600. Never recreate the signing key for an update. Passwords and signing keys stay outside the repository.
+The default key path is `~/.local/share/aall/signing/aall.jks`. Keep a private backup of it and its password. Never recreate the key, because Android rejects updates signed with a different one.
 
 ## Validation
 
-See [VALIDATION.md](VALIDATION.md) for the latest measured checks and outstanding device tests. The icon comes from `../danields.dev/public/icon-512.png`; initial app suggestions match `../my-tasker/config.json`. Neither reference project is required at runtime.
+See [VALIDATION.md](VALIDATION.md) for the latest measured checks and outstanding device tests.
