@@ -69,6 +69,7 @@ export function Today({ navigation }: ScreenProps<"Today">) {
   const { state, act } = useStore();
   const { begin } = useDraft();
   const insets = useSafeAreaInsets();
+  // oxlint-disable-next-line react/purity -- The snapshot poll re-renders with the current time.
   const now = Date.now();
   const summary = hero(state, now);
   const routines = state.config.routines.map((weekly) => state.overrides[weekly.id] ?? weekly);

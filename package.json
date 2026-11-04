@@ -9,7 +9,9 @@
     "prebuild": "expo prebuild --platform android",
     "typecheck": "tsc --noEmit",
     "test": "vp test",
-    "check": "vp check",
+    "check": "vp check && pnpm check:kotlin",
+    "check:kotlin": "bash scripts/ktlint.sh",
+    "format": "vp check --fix && bash scripts/ktlint.sh --format",
     "build:apk": "bash scripts/build-apk.sh",
     "release": "bash scripts/release.sh"
   },
