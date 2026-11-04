@@ -11,7 +11,7 @@ const rowHeight = 64;
 export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
   const { list } = route.params;
   const { apps, icons, loadIcons } = useStore();
-  const { draft, update } = useDraft();
+  const { draft, dispatch } = useDraft();
   const [query, setQuery] = useState("");
   const selected = draft?.routine[list] ?? [];
   const routineId = draft?.routine.id;
@@ -42,13 +42,6 @@ export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
     `${app.label} ${app.packageName}`.toLowerCase().includes(needle),
   );
   if (!draft) return null;
-  const toggle = (pkg: string) =>
-    update({
-      routine: {
-        ...draft.routine,
-        [list]: selected.includes(pkg) ? selected.filter((p) => p !== pkg) : [...selected, pkg],
-      },
-    });
   return (
     <KeyboardScreen>
       <View className="px-4 pb-2 pt-2">
@@ -75,7 +68,7 @@ export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
               accessibilityLabel={item.label}
               accessibilityState={{ checked }}
               android_ripple={{ color: "rgba(255,255,255,0.12)" }}
-              onPress={() => toggle(item.packageName)}
+              onPress={() => dispatch({ type: "toggleApp", list, packageName: item.packageName })}
               style={{ height: rowHeight }}
               className="flex-row items-center gap-3 px-4"
             >

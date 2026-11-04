@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { usePreventRemove } from "@react-navigation/native";
 import { Alert, Pressable, Switch, Text, ToastAndroid, View } from "react-native";
+import { checkDraft, focusMinutesToSave, isDirty, type DraftEdit } from "../draft";
 import {
   earliestChargingStart,
   editors,
   isOvernight,
-  parseMinutes,
   type InstalledApp,
   type Routine,
   type Window,
@@ -48,14 +48,14 @@ function HoursCard({
   routine,
   window,
   index,
-  onChange,
-  onRemove,
+  dispatch,
+  removable,
 }: {
   routine: Routine;
   window: Window;
   index: number;
-  onChange(window: Window): void;
-  onRemove?(): void;
+  dispatch(edit: DraftEdit): void;
+  removable: boolean;
 }) {
   const noun = editors[routine.id].windowLabel;
   return (
@@ -64,12 +64,12 @@ function HoursCard({
         <Text className="text-base font-semibold text-ink">
           {routine.windows.length > 1 ? `${noun} ${index + 1}` : noun}
         </Text>
-        {onRemove && (
+        {removable && (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Remove ${noun.toLowerCase()} ${index + 1}`}
             hitSlop={4}
-            onPress={onRemove}
+            onPress={() => dispatch({ type: "removeWindow", index })}
             className="h-10 w-10 items-center justify-center"
           >
             <Icon name="trash-can-outline" size={20} color={colors.danger} />
@@ -80,15 +80,18 @@ function HoursCard({
         <TimeField
           label="Start"
           value={window.start}
-          onChange={(start) => onChange({ ...window, start })}
+          onChange={(start) => dispatch({ type: "setWindowTime", index, time: { start } })}
         />
         <TimeField
           label={isOvernight(window) ? "End · next day" : "End"}
           value={window.end}
-          onChange={(end) => onChange({ ...window, end })}
+          onChange={(end) => dispatch({ type: "setWindowTime", index, time: { end } })}
         />
       </View>
-      <DayPicker days={window.days} onChange={(days) => onChange({ ...window, days })} />
+      <DayPicker
+        days={window.days}
+        onToggle={(day) => dispatch({ type: "toggleWindowDay", index, day })}
+      />
       {!window.days.length && <FieldError>Pick at least one day.</FieldError>}
     </Card>
   );
@@ -96,10 +99,9 @@ function HoursCard({
 
 export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
   const { state, apps, act } = useStore();
-  const { draft, original, update } = useDraft();
+  const { draft, original, dispatch } = useDraft();
   const [saved, setSaved] = useState(false);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(original);
-  usePreventRemove(dirty && !saved, ({ data }) => {
+  usePreventRemove(isDirty(draft, original) && !saved, ({ data }) => {
     Alert.alert("Discard changes?", "Your changes to this routine haven't been saved.", [
       { text: "Keep editing", style: "cancel" },
       { text: "Discard", style: "destructive", onPress: () => navigation.dispatch(data.action) },
@@ -110,23 +112,19 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
   }, [saved, navigation]);
   if (!draft) return null;
   const { routine, minutes } = draft;
-  const setRoutine = (change: Partial<Routine>) => update({ routine: { ...routine, ...change } });
-  const setWindow = (index: number, window: Window) =>
-    setRoutine({ windows: routine.windows.map((w, i) => (i === index ? window : w)) });
   const editor = editors[routine.id];
-  const parsedMinutes = parseMinutes(minutes);
-  const earlyInvalid =
-    editors[routine.id].chargingStart && routine.earlyStart < earliestChargingStart;
-  const invalid =
-    routine.windows.some((w) => !w.days.length) ||
-    earlyInvalid ||
-    (editor.session && parsedMinutes === null);
   const overridden = !!state.overrides[routine.id];
+  const {
+    minutes: parsedMinutes,
+    earlyStartInvalid,
+    canSaveToday,
+    canSaveWeekly,
+  } = checkDraft(draft, original, overridden);
   const save = (today: boolean) => {
     const done = act(() => {
       if (today) return saveToday(routine);
-      if (editor.session && parsedMinutes !== state.config.focusMinutes)
-        saveConfig({ ...state.config, focusMinutes: parsedMinutes! });
+      const focusMinutes = focusMinutesToSave(draft, state.config.focusMinutes);
+      if (focusMinutes !== null) saveConfig({ ...state.config, focusMinutes });
       saveWeekly(routine);
     });
     if (!done) return;
@@ -145,7 +143,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
               <Switch
                 accessibilityLabel="Enabled"
                 value={routine.enabled}
-                onValueChange={(enabled) => setRoutine({ enabled })}
+                onValueChange={(enabled) => dispatch({ type: "setEnabled", enabled })}
                 trackColor={{ false: colors.raised, true: colors.accent }}
                 thumbColor={routine.enabled ? colors.onAccent : colors.muted}
               />
@@ -169,7 +167,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
                     key={preset}
                     label={`${preset} min`}
                     selected={parsedMinutes === preset}
-                    onPress={() => update({ minutes: String(preset) })}
+                    onPress={() => dispatch({ type: "setMinutes", value: String(preset) })}
                   />
                 ))}
               </View>
@@ -177,7 +175,8 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
                 label="Focus duration in minutes"
                 value={minutes}
                 error={parsedMinutes === null}
-                onChange={(value) => update({ minutes: value.replace(/\D/g, "") })}
+                onChange={(value) => dispatch({ type: "setMinutes", value })}
+                onStep={(by) => dispatch({ type: "stepMinutes", by })}
               />
               {parsedMinutes === null && <FieldError>Choose 1 to 1440 minutes.</FieldError>}
             </Card>
@@ -192,12 +191,8 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
                 routine={routine}
                 window={window}
                 index={index}
-                onChange={(next) => setWindow(index, next)}
-                onRemove={
-                  editor.windowCountEditable
-                    ? () => setRoutine({ windows: routine.windows.filter((_, i) => i !== index) })
-                    : undefined
-                }
+                dispatch={dispatch}
+                removable={editor.windowCountEditable}
               />
             ))}
             {editor.windowCountEditable && !routine.windows.length && (
@@ -208,14 +203,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
                 title="Add hours"
                 variant="outline"
                 icon="plus"
-                onPress={() =>
-                  setRoutine({
-                    windows: [
-                      ...routine.windows,
-                      { start: "09:00", end: "17:00", days: [1, 2, 3, 4, 5] },
-                    ],
-                  })
-                }
+                onPress={() => dispatch({ type: "addWindow" })}
               />
             )}
           </Section>
@@ -227,9 +215,9 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
               <TimeField
                 label="Plugging in starts bedtime after"
                 value={routine.earlyStart}
-                onChange={(earlyStart) => setRoutine({ earlyStart })}
+                onChange={(earlyStart) => dispatch({ type: "setEarlyStart", earlyStart })}
               />
-              {earlyInvalid ? (
+              {earlyStartInvalid ? (
                 <FieldError>Choose {earliestChargingStart} or later.</FieldError>
               ) : (
                 <Text className="px-1 text-sm text-muted">
@@ -269,7 +257,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
               <Button
                 title="Only today"
                 variant="secondary"
-                disabled={!dirty || invalid}
+                disabled={!canSaveToday}
                 onPress={() => save(true)}
               />
             </View>
@@ -277,7 +265,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
           <View className="flex-1">
             <Button
               title={editor.session ? "Save" : "Save weekly"}
-              disabled={(!dirty && !overridden) || invalid}
+              disabled={!canSaveWeekly}
               onPress={() => save(false)}
             />
           </View>
