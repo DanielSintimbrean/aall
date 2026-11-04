@@ -1,5 +1,7 @@
 package dev.danields.aall.automation
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
 
 class AutomationReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {

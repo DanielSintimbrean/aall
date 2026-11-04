@@ -7,9 +7,7 @@ import org.json.JSONObject
 enum class AppRule { NONE, BLOCK_LISTED, ALLOW_LISTED }
 
 enum class RoutineStatus(val id: String) {
-  DISABLED(
-    "disabled"
-  ),
+  DISABLED("disabled"),
   NEEDS_SETUP("needsSetup"),
   ACTIVE("active"),
   READY("ready")
@@ -78,9 +76,10 @@ data class Routine(
 
   fun needsAccessibility() = kind.appRule != AppRule.NONE || colorApps.isNotEmpty()
 
-  fun needsSetup(p: Permissions) =
-    !p.alarms || (needsAccessibility() && !p.accessibility) || (kind.usesGrayscale && !p.grayscale) ||
-      (kind.usesDnd && !p.dnd)
+  fun needsSetup(p: Permissions) = !p.alarms ||
+    (needsAccessibility() && !p.accessibility) ||
+    (kind.usesGrayscale && !p.grayscale) ||
+    (kind.usesDnd && !p.dnd)
 
   fun status(p: Permissions, running: Boolean) = when {
     !enabled -> RoutineStatus.DISABLED
@@ -140,9 +139,7 @@ data class Config(val focusMinutes: Int, val routines: List<Routine>) {
 
   fun with(routine: Routine) = copy(
     routines = routines.map {
-      if (it.kind ==
-        routine.kind
-      ) {
+      if (it.kind == routine.kind) {
         routine
       } else {
         it

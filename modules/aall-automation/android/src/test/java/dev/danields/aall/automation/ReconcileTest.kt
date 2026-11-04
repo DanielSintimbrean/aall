@@ -4,7 +4,10 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ReconcileTest {
@@ -28,13 +31,12 @@ class ReconcileTest {
     enabled: Boolean = true
   ) = Routine(kind, kind.id, enabled, windows, apps, colorApps, time(20))
 
-  private val bedtime =
-    routine(
-      RoutineKind.BEDTIME,
-      listOf(Window(time(22, 30), time(7), allDays)),
-      apps = listOf("clock"),
-      colorApps = listOf("maps")
-    )
+  private val bedtime = routine(
+    RoutineKind.BEDTIME,
+    listOf(Window(time(22, 30), time(7), allDays)),
+    apps = listOf("clock"),
+    colorApps = listOf("maps")
+  )
 
   private fun state(
     vararg routines: Routine,
@@ -89,13 +91,12 @@ class ReconcileTest {
   }
 
   @Test fun dayOffSuppressesBedtimeCarriedOverFromTheEvening() {
-    val d =
-      decide(
-        state(bedtime) {
-          copy(daysOff = listOf("2026-11-03"), dndOwned = true)
-        },
-        clock("2026-11-03T02:00:00")
-      )
+    val d = decide(
+      state(bedtime) {
+        copy(daysOff = listOf("2026-11-03"), dndOwned = true)
+      },
+      clock("2026-11-03T02:00:00")
+    )
     assertTrue(d.dayOff)
     assertEquals(emptyList<RoutineKind>(), kinds(d))
     assertEquals(false, d.setDnd)
@@ -121,10 +122,9 @@ class ReconcileTest {
 
   @Test fun timersRecoverWallDeadlineAfterReboot() {
     val started = clock("2026-11-02T10:00:00", boot = 1, elapsed = 500000)
-    val focus =
-      state(routine(RoutineKind.FOCUS)) {
-        copy(timers = mapOf(Timer.FOCUS to Timer.start(started, 3000000)))
-      }
+    val focus = state(routine(RoutineKind.FOCUS)) {
+      copy(timers = mapOf(Timer.FOCUS to Timer.start(started, 3000000)))
+    }
     val rebooted = Clock(started.wall + 1000000, 20, 2, zone)
     val d = decide(focus, rebooted)
     assertEquals(2000000L, d.focusRemaining)
@@ -146,12 +146,11 @@ class ReconcileTest {
   }
 
   @Test fun missingPermissionsSkipEffectsAndReportErrors() {
-    val d =
-      decide(
-        state(bedtime),
-        clock("2026-11-02T23:00:00"),
-        permissions = Permissions(false, false, false, false)
-      )
+    val d = decide(
+      state(bedtime),
+      clock("2026-11-02T23:00:00"),
+      permissions = Permissions(false, false, false, false)
+    )
     assertNull(d.setDnd)
     assertNull(d.setGrayscale)
     assertEquals(
@@ -180,10 +179,7 @@ class ReconcileTest {
     assertEquals(
       false,
       decide(
-        testing.copy(
-          timers =
-            testing.timers + (Timer.PAUSE to Timer.start(now, 900000))
-        ),
+        testing.copy(timers = testing.timers + (Timer.PAUSE to Timer.start(now, 900000))),
         now
       ).setGrayscale
     )
@@ -196,12 +192,11 @@ class ReconcileTest {
     assertFalse(
       decide(state(bedtime), night, foreground = "launcher", allowed = setOf("launcher")).blocked
     )
-    val access =
-      routine(
-        RoutineKind.ACCESS,
-        listOf(Window(time(12, 30), time(13, 15), allDays)),
-        apps = listOf("social")
-      )
+    val access = routine(
+      RoutineKind.ACCESS,
+      listOf(Window(time(12, 30), time(13, 15), allDays)),
+      apps = listOf("social")
+    )
     assertTrue(decide(state(access), clock("2026-11-02T12:00:00"), foreground = "social").blocked)
     assertFalse(decide(state(access), clock("2026-11-02T12:45:00"), foreground = "social").blocked)
     assertFalse(decide(state(access), clock("2026-11-02T12:00:00"), foreground = "other").blocked)
@@ -224,13 +219,12 @@ class ReconcileTest {
     val date = LocalDate.parse("2026-11-02")
     val weekly = bedtime.copy(enabled = false)
     val tonight = Override(bedtime, date, 0)
-    val during =
-      decide(
-        state(weekly) {
-          copy(overrides = mapOf(RoutineKind.BEDTIME to tonight))
-        },
-        clock("2026-11-03T06:59:00")
-      )
+    val during = decide(
+      state(weekly) {
+        copy(overrides = mapOf(RoutineKind.BEDTIME to tonight))
+      },
+      clock("2026-11-03T06:59:00")
+    )
     assertEquals(listOf(RoutineKind.BEDTIME), kinds(during))
     assertEquals(at("2026-11-03T07:00:00"), during.state.overrides[RoutineKind.BEDTIME]?.until)
     val after = decide(during.state, clock("2026-11-03T07:00:00"))
@@ -280,10 +274,9 @@ class ReconcileTest {
 
   @Test fun statusFollowsARunningOverride() {
     val tonight = Override(bedtime, LocalDate.parse("2026-11-02"), 0)
-    val weeklyOff =
-      state(bedtime.copy(enabled = false)) {
-        copy(overrides = mapOf(RoutineKind.BEDTIME to tonight))
-      }
+    val weeklyOff = state(bedtime.copy(enabled = false)) {
+      copy(overrides = mapOf(RoutineKind.BEDTIME to tonight))
+    }
     assertEquals(
       RoutineStatus.READY,
       decide(weeklyOff, clock("2026-11-02T12:00:00")).statuses[RoutineKind.BEDTIME]

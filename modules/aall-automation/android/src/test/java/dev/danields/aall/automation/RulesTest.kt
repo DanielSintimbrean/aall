@@ -1,6 +1,12 @@
 package dev.danields.aall.automation
-import java.time.*
-import org.junit.Assert.*
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RulesTest {
@@ -115,13 +121,12 @@ class RulesTest {
   private fun stored(id: String, windows: String = "[]", extra: String = "") =
     """{"id":"$id","title":"$id","enabled":false,"windows":$windows,"apps":["com.example.app"],"colorApps":[],"earlyStart":"20:00"$extra}"""
 
-  private val validRoutines =
-    listOf(
-      stored("access"),
-      stored("focus"),
-      stored("grayscale"),
-      stored("bedtime", """[{"start":"22:30","end":"07:00","days":[1,3]}]""")
-    )
+  private val validRoutines = listOf(
+    stored("access"),
+    stored("focus"),
+    stored("grayscale"),
+    stored("bedtime", """[{"start":"22:30","end":"07:00","days":[1,3]}]""")
+  )
 
   @Test fun storedConfigSurvivesRoundTrip() {
     val parsed = Config.parse(config(validRoutines.joinToString(",")))
@@ -141,14 +146,7 @@ class RulesTest {
 
   @Test(expected = IllegalArgumentException::class)
   fun bedtimeNeedsOneWindow() {
-    Config.parse(
-      config(
-        (
-          validRoutines.dropLast(1) +
-            stored("bedtime")
-          ).joinToString(",")
-      )
-    )
+    Config.parse(config((validRoutines.dropLast(1) + stored("bedtime")).joinToString(",")))
   }
 
   @Test(expected = IllegalArgumentException::class)

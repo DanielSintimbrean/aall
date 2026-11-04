@@ -6,9 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Color
-import android.view.*
+import android.view.Gravity
+import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
-import android.widget.*
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
 
 class AallAccessibilityService : AccessibilityService() {
   companion object {
@@ -64,20 +67,17 @@ class AallAccessibilityService : AccessibilityService() {
     }
     layout.addView(
       TextView(this).apply {
-        text =
-          "aall\nThis app is paused\n${decision.routines.joinToString { it.title }}"
+        text = "aall\nThis app is paused\n${decision.routines.joinToString { it.title }}"
         textSize = 24f
         setTextColor(Color.WHITE)
-        gravity =
-          Gravity.CENTER
+        gravity = Gravity.CENTER
       }
     )
     layout.addView(
       Button(this).apply {
         text = "Open aall"
         setOnClickListener {
-          this@AallAccessibilityService.foreground =
-            packageName
+          this@AallAccessibilityService.foreground = packageName
           Engine(this@AallAccessibilityService).reconcile()
           startActivity(
             packageManager.getLaunchIntentForPackage(
@@ -108,15 +108,13 @@ class AallAccessibilityService : AccessibilityService() {
 
   override fun onInterrupt() {
     overlay?.let { getSystemService(WindowManager::class.java).removeView(it) }
-    overlay =
-      null
+    overlay = null
   }
 
   override fun onDestroy() {
     if (powerRegistered) unregisterReceiver(powerReceiver)
     onInterrupt()
-    instance =
-      null
+    instance = null
     super.onDestroy()
   }
 }

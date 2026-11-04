@@ -104,16 +104,14 @@ object Reconcile {
       nextChange = nextChange(state, clock),
       errors = errors(routines, dnd, gray, env.permissions),
       statuses = state.config.routines.associate { base ->
-        base.kind to
-          effective(state, base).first.status(env.permissions, base.kind in runningKinds)
+        base.kind to effective(state, base).first.status(env.permissions, base.kind in runningKinds)
       }
     )
   }
 
   fun saveWeekly(state: State, routine: Routine) = state.copy(
     config = state.config.with(routine),
-    overrides =
-      state.overrides - routine.kind
+    overrides = state.overrides - routine.kind
   )
 
   fun startBedtimeEarly(before: State, clock: Clock): State {
@@ -142,15 +140,12 @@ object Reconcile {
 
   private fun reanchorTimers(state: State, clock: Clock) = state.copy(
     timers = state.timers.mapValues { (_, timer) ->
-      if (timer.boot ==
-        clock.boot
-      ) {
+      if (timer.boot == clock.boot) {
         timer
       } else {
         timer.copy(
           boot = clock.boot,
-          elapsed =
-            clock.elapsed + timer.remaining(clock)
+          elapsed = clock.elapsed + timer.remaining(clock)
         )
       }
     }
@@ -173,15 +168,11 @@ object Reconcile {
 
   private fun errors(routines: List<Routine>, dnd: Boolean, gray: Boolean, p: Permissions) =
     buildList {
-      if (routines.any { it.kind.appRule != AppRule.NONE } &&
-        !p.accessibility
-      ) {
+      if (routines.any { it.kind.appRule != AppRule.NONE } && !p.accessibility) {
         add("App blocking needs accessibility access.")
       }
       if (dnd && !p.dnd) add("DND access missing.")
-      if (gray && routines.any { it.colorApps.isNotEmpty() } &&
-        !p.accessibility
-      ) {
+      if (gray && routines.any { it.colorApps.isNotEmpty() } && !p.accessibility) {
         add("Color exceptions need accessibility access.")
       }
       if (gray && !p.grayscale) add("Grayscale needs the ADB grant.")
@@ -192,23 +183,17 @@ object Reconcile {
     val now = clock.wall
     val zone = clock.zone
     val today = clock.today
-    val candidates =
-      mutableListOf(
-        today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli(),
-        state.bedtimeUntil
-      )
+    val candidates = mutableListOf(
+      today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli(),
+      state.bedtimeUntil
+    )
     for (key in listOf(Timer.FOCUS, Timer.PAUSE, Timer.GRAY_TEST)) {
-      remaining(state, key, clock).takeIf {
-        it >
-          0
-      }?.let { candidates.add(now + it) }
+      remaining(state, key, clock).takeIf { it > 0 }?.let { candidates.add(now + it) }
     }
     for (base in state.config.routines) {
       val (r, anchor) = effective(state, base)
       state.overrides[base.kind]?.let { candidates.add(it.until) }
-      if (r.kind == RoutineKind.BEDTIME &&
-        r.enabled
-      ) {
+      if (r.kind == RoutineKind.BEDTIME && r.enabled) {
         candidates.add(today.atTime(r.earlyStart).atZone(zone).toInstant().toEpochMilli())
       }
       for (rule in listOf(r, base).filter { it.enabled }) {

@@ -14,8 +14,7 @@ class Store(context: Context) {
     config = prefs.getString("config", null)?.let(Config::parse) ?: Config.EMPTY,
     overrides = RoutineKind.entries.mapNotNull { kind ->
       prefs.getString(overrideKey(kind), null)?.let {
-        kind to
-          parseOverride(JSONObject(it))
+        kind to parseOverride(JSONObject(it))
       }
     }.toMap(),
     daysOff = JSONArray(prefs.getString("daysOff", "[]")).let { a ->
@@ -23,8 +22,7 @@ class Store(context: Context) {
     },
     timers = timerKeys.mapNotNull { key ->
       prefs.getString(key, null)?.let {
-        key to
-          parseTimer(JSONObject(it))
+        key to parseTimer(JSONObject(it))
       }
     }.toMap(),
     bedtimeDate = prefs.getString("bedtimeDate", null)?.let(LocalDate::parse),
@@ -39,9 +37,7 @@ class Store(context: Context) {
     for (kind in RoutineKind.entries) {
       if (before.overrides[kind] != after.overrides[kind]) {
         val o = after.overrides[kind]
-        if (o ==
-          null
-        ) {
+        if (o == null) {
           edit.remove(overrideKey(kind))
         } else {
           edit.putString(
@@ -54,17 +50,13 @@ class Store(context: Context) {
         }
       }
     }
-    if (before.daysOff !=
-      after.daysOff
-    ) {
+    if (before.daysOff != after.daysOff) {
       edit.putString("daysOff", JSONArray(after.daysOff).toString())
     }
     for (key in timerKeys) {
       if (before.timers[key] != after.timers[key]) {
         val t = after.timers[key]
-        if (t ==
-          null
-        ) {
+        if (t == null) {
           edit.remove(key)
         } else {
           edit.putString(
@@ -77,9 +69,7 @@ class Store(context: Context) {
         }
       }
     }
-    if (before.bedtimeDate !=
-      after.bedtimeDate
-    ) {
+    if (before.bedtimeDate != after.bedtimeDate) {
       edit.putString("bedtimeDate", after.bedtimeDate?.toString())
     }
     if (before.bedtimeUntil != after.bedtimeUntil) edit.putLong("bedtimeUntil", after.bedtimeUntil)

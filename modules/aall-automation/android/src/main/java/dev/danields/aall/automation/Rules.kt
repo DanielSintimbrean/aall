@@ -1,10 +1,22 @@
 package dev.danields.aall.automation
 
-import java.time.*
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 object Rules {
-  val alwaysAllowed =
-    setOf("com.android.settings", "com.android.systemui", "com.google.android.dialer", "com.samsung.android.dialer", "com.android.dialer", "com.android.server.telecom", "com.android.emergency", "com.android.permissioncontroller", "com.google.android.permissioncontroller", "com.google.android.packageinstaller")
+  val alwaysAllowed = setOf(
+    "com.android.settings",
+    "com.android.systemui",
+    "com.google.android.dialer",
+    "com.samsung.android.dialer",
+    "com.android.dialer",
+    "com.android.server.telecom",
+    "com.android.emergency",
+    "com.android.permissioncontroller",
+    "com.google.android.permissioncontroller",
+    "com.google.android.packageinstaller"
+  )
 
   fun remaining(
     sameBoot: Boolean,
@@ -26,16 +38,13 @@ object Rules {
     }
 
   fun interval(w: Window, date: LocalDate, zone: ZoneId): Pair<Long, Long> =
-    date.atTime(w.start).atZone(zone).toInstant().toEpochMilli() to
-      date.plusDays(
-        if (w.end <=
-          w.start
-        ) {
-          1
-        } else {
-          0
-        }
-      ).atTime(w.end).atZone(zone).toInstant().toEpochMilli()
+    date.atTime(w.start).atZone(zone).toInstant().toEpochMilli() to date.plusDays(
+      if (w.end <= w.start) {
+        1
+      } else {
+        0
+      }
+    ).atTime(w.end).atZone(zone).toInstant().toEpochMilli()
 
   fun runsOn(w: Window, date: LocalDate, anchor: LocalDate?) =
     anchor == date || date.dayOfWeek.value in w.days
@@ -58,16 +67,13 @@ object Rules {
   fun challenge(): Pair<String, Int> {
     val random = java.security.SecureRandom()
     while (true) {
-      val a =
-        50 + random.nextInt(950)
+      val a = 50 + random.nextInt(950)
       val b = 50 + random.nextInt(950)
       val c = 50 + random.nextInt(950)
       val s = if (random.nextBoolean()) 1 else -1
       val t = if (random.nextBoolean()) 1 else -1
       val answer = a + s * b + t * c
-      if (answer in
-        -999..999
-      ) {
+      if (answer in -999..999) {
         return "$a ${if (s == 1) "+" else "-"} $b ${if (t == 1) "+" else "-"} $c" to answer
       }
     }

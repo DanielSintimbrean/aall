@@ -57,9 +57,8 @@ class Engine(private val context: Context) {
     state.config.with(r).validated()
     val clock = clock()
     state.copy(
-      overrides =
-        state.overrides +
-          (r.kind to Override(r, clock.today, Rules.overrideExpiry(r, clock.today, clock.zone)))
+      overrides = state.overrides +
+        (r.kind to Override(r, clock.today, Rules.overrideExpiry(r, clock.today, clock.zone)))
     )
   }
 
@@ -90,8 +89,7 @@ class Engine(private val context: Context) {
       timers = if (enabled) {
         state.timers + (Timer.GRAY_TEST to Timer.start(clock(), 10000))
       } else {
-        state.timers -
-          Timer.GRAY_TEST
+        state.timers - Timer.GRAY_TEST
       }
     )
   }
@@ -128,18 +126,14 @@ class Engine(private val context: Context) {
       try {
         applyDnd(wanted)
         store.save(decision.state, decision.state.copy(dndOwned = wanted))
-      } catch (
-        ex: Exception
-      ) {
+      } catch (ex: Exception) {
         failures.add("DND: ${ex.message}")
       }
     }
     decision.setGrayscale?.let { wanted ->
       try {
         applyGrayscale(wanted)
-      } catch (
-        ex: Exception
-      ) {
+      } catch (ex: Exception) {
         failures.add("Grayscale: ${ex.message}")
       }
     }
@@ -168,13 +162,16 @@ class Engine(private val context: Context) {
     accessibility = AallAccessibilityService.instance != null,
     dnd = notification.isNotificationPolicyAccessGranted,
     alarms = alarm.canScheduleExactAlarms(),
-    grayscale =
-      context.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") ==
-        PackageManager.PERMISSION_GRANTED
+    grayscale = context.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") ==
+      PackageManager.PERMISSION_GRANTED
   )
 
   private fun applyDnd(on: Boolean) = notification.setInterruptionFilter(
-    if (on) NotificationManager.INTERRUPTION_FILTER_PRIORITY else NotificationManager.INTERRUPTION_FILTER_ALL
+    if (on) {
+      NotificationManager.INTERRUPTION_FILTER_PRIORITY
+    } else {
+      NotificationManager.INTERRUPTION_FILTER_ALL
+    }
   )
 
   private fun applyGrayscale(on: Boolean) {
@@ -189,9 +186,7 @@ class Engine(private val context: Context) {
       check(Settings.Secure.putInt(resolver, "accessibility_display_daltonizer", 0))
       check(Settings.Secure.putInt(resolver, "accessibility_display_daltonizer_enabled", 1))
     } else if (!on && prefs.getBoolean("grayOwned", false)) {
-      if (enabled == 1 &&
-        mode == 0
-      ) {
+      if (enabled == 1 && mode == 0) {
         Settings.Secure.putInt(
           resolver,
           "accessibility_display_daltonizer",
@@ -250,8 +245,7 @@ class Engine(private val context: Context) {
         "overrides",
         JSONObject(
           d.state.overrides.entries.associate {
-            it.key.id to
-              it.value.routine.toJson()
+            it.key.id to it.value.routine.toJson()
           }
         )
       )
