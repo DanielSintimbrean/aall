@@ -7,8 +7,9 @@
 - Expo dependency compatibility check.
 - TypeScript strict typecheck, Vite+ formatting and lint.
 - Four shared TypeScript tests for defaults, input validation and 72-hour booking boundaries.
-- Seven native JVM tests for overnight ownership, Only today, elapsed timers and reboot deadlines, overlapping requests, bypass suppression and expiry, retry verification, DST booking boundaries and 10,000 generated arithmetic challenges.
+- Eight native JVM tests for overnight ownership, Only today, elapsed timers and reboot deadlines, overlapping requests, bypass suppression and expiry, retry verification, DST booking boundaries, timezone-aware temporary expiry and 10,000 generated arithmetic challenges.
 - Metro production Android export.
+- GitHub-hosted full APK build, including shared checks and native tests.
 - Independent arm64 standalone release APK build, including native compilation and Android release lint.
 - APK signed with persistent release certificate, installed and launched through ADB without Metro.
 - Native WRITE_SECURE_SETTINGS permission granted on the physical phone.
@@ -29,7 +30,7 @@
 - Overnight and charging-triggered bedtime through wake-up time on the physical phone.
 - Day-off midnight transitions and a full 15-minute bypass while the device is idle.
 - Color exceptions while Camera, Photos and Maps are foregrounded.
-- GitHub-hosted build, signed Release download and Obtainium update installation.
+- Signed Release download and Obtainium update installation.
 
 These checks require real elapsed time or changes to the phone's operating state. JVM tests cover the rule boundaries but do not prove Android delivery under every battery or idle condition.
 

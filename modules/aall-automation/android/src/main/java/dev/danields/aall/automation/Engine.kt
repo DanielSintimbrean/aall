@@ -29,7 +29,9 @@ class Engine(private val context: Context) {
   private fun effective(r: JSONObject, now: Long): Pair<JSONObject, LocalDate?> {
     val raw = prefs.getString("today.${r.getString("id")}", null) ?: return r to null
     val o = JSONObject(raw)
-    if (now >= o.getLong("until")) { prefs.edit().remove("today.${r.getString("id")}").commit(); return r to null }
+    val until = Rules.overrideExpiry(o.getJSONObject("routine"),LocalDate.parse(o.getString("date")),zone)
+    if(until != o.getLong("until")) put("today.${r.getString("id")}",o.put("until",until).toString())
+    if (now >= until) { prefs.edit().remove("today.${r.getString("id")}").commit(); return r to null }
     return o.getJSONObject("routine") to LocalDate.parse(o.getString("date"))
   }
   fun overrideToday(id: String, raw: String) {
@@ -56,6 +58,11 @@ class Engine(private val context: Context) {
     for(i in 0 until rs.length()) {
       val (r,anchor)=effective(rs.getJSONObject(i),now); if(!r.getBoolean("enabled")) continue
       val id=r.getString("id")
+      if(id=="bedtime") prefs.getString("bedtimeDate",null)?.let { date ->
+        val end=Rules.interval(r.getJSONArray("windows").getJSONObject(0),LocalDate.parse(date),zone).second
+        prefs.edit().putLong("bedtimeUntil",end).apply()
+        if(end<=now) prefs.edit().remove("bedtimeDate").apply()
+      }
       val running = Rules.requests(id,Rules.active(r,now,zone,anchor),remaining("focus",now),prefs.getLong("bedtimeUntil",0),now)
       if(running) active.add(r)
     }
@@ -70,7 +77,7 @@ class Engine(private val context: Context) {
       val early=today.atTime(LocalTime.parse(r.getString("earlyStart"))).atZone(zone).toInstant().toEpochMilli()
       val (start,end)=Rules.interval(w,today,zone)
       val days=w.getJSONArray("days")
-      if(now in early until start && (anchor==today || (0 until days.length()).any{days.getInt(it)==today.dayOfWeek.value})) prefs.edit().putLong("bedtimeUntil",end).commit()
+      if(now in early until start && (anchor==today || (0 until days.length()).any{days.getInt(it)==today.dayOfWeek.value})) prefs.edit().putLong("bedtimeUntil",end).putString("bedtimeDate",today.toString()).commit()
     }
   }
   fun permissions() = JSONObject().put("accessibility", AallAccessibilityService.instance != null).put("dnd",notification.isNotificationPolicyAccessGranted).put("alarms",alarm.canScheduleExactAlarms()).put("grayscale",context.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS")==PackageManager.PERMISSION_GRANTED)

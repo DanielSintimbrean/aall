@@ -6,12 +6,30 @@ import android.view.*
 import android.widget.*
 import android.graphics.Color
 import android.content.Intent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
 
 class AallAccessibilityService : AccessibilityService() {
   companion object { var instance: AallAccessibilityService? = null }
   var foreground = ""
   private var overlay: android.view.View? = null
-  override fun onServiceConnected() { instance=this; Engine(this).reconcile() }
+  private var powerRegistered = false
+  private val powerReceiver = object : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+      val engine = Engine(context)
+      if(intent.action == Intent.ACTION_POWER_CONNECTED) engine.charging()
+      engine.reconcile()
+    }
+  }
+  override fun onServiceConnected() {
+    instance=this
+    registerReceiver(powerReceiver,IntentFilter().apply {
+      addAction(Intent.ACTION_POWER_CONNECTED); addAction(Intent.ACTION_POWER_DISCONNECTED)
+    },Context.RECEIVER_NOT_EXPORTED)
+    powerRegistered = true
+    Engine(this).reconcile()
+  }
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
     if(event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
     val pkg=event.packageName?.toString() ?: return
@@ -30,5 +48,5 @@ class AallAccessibilityService : AccessibilityService() {
     wm.addView(layout,WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,0,android.graphics.PixelFormat.OPAQUE))
   }
   override fun onInterrupt() { overlay?.let{getSystemService(WindowManager::class.java).removeView(it)}; overlay=null }
-  override fun onDestroy() { onInterrupt(); instance=null; super.onDestroy() }
+  override fun onDestroy() { if(powerRegistered) unregisterReceiver(powerReceiver); onInterrupt(); instance=null; super.onDestroy() }
 }

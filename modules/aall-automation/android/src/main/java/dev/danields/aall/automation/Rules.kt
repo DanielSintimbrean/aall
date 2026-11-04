@@ -15,6 +15,12 @@ object Rules {
   }
   fun suppress(dayOff: Boolean, pauseRemaining: Long) = dayOff || pauseRemaining > 0
 
+  fun overrideExpiry(r: JSONObject, date: LocalDate, zone: ZoneId): Long {
+    var until = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+    val windows = r.getJSONArray("windows")
+    for(i in 0 until windows.length()) until = maxOf(until,interval(windows.getJSONObject(i),date,zone).second)
+    return until
+  }
   fun interval(w: JSONObject, date: LocalDate, zone: ZoneId): Pair<Long, Long> {
     val start = LocalTime.parse(w.getString("start"))
     val end = LocalTime.parse(w.getString("end"))

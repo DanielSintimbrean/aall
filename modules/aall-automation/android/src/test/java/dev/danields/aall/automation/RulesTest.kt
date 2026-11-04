@@ -23,6 +23,12 @@ class RulesTest {
   @Test fun wrongAnswersRetrySameExpectedValue() {
     assertFalse(Rules.verifies("123",456));assertFalse(Rules.verifies("456.0",456));assertTrue(Rules.verifies("456",456))
   }
+  @Test fun temporaryExpiryFollowsLocalWakeAcrossZoneChanges() {
+    val day=LocalDate.parse("2026-11-02")
+    val madrid=Rules.overrideExpiry(routine(),day,zone)
+    val utc=Rules.overrideExpiry(routine(),day,ZoneId.of("UTC"))
+    assertEquals(3600000L,utc-madrid)
+  }
   @Test fun overnightBelongsToStartingWeekday() {
     assertTrue(Rules.active(routine(),time("2026-11-03T06:59:00+01:00[Europe/Madrid]"),zone))
     assertFalse(Rules.active(routine(),time("2026-11-03T07:00:00+01:00[Europe/Madrid]"),zone))
