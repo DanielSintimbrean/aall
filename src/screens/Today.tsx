@@ -73,7 +73,7 @@ export function Today({ navigation }: ScreenProps<"Today">) {
   const summary = hero(state, now);
   const routines = state.config.routines.map((weekly) => state.overrides[weekly.id] ?? weekly);
   const focusRoutine = routines.find((r) => editors[r.id].session);
-  const focusRunning = focusMinutesLeft(state, now) > 0;
+  const focusRunning = !!focusRoutine?.enabled && minutesLeft(state.focusUntil, now) > 0;
   const paused = minutesLeft(state.pauseUntil, now) > 0;
   const open = (routine: Routine) => {
     begin(routine, state.config.focusMinutes);

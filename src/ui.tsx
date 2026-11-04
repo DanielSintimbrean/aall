@@ -218,7 +218,7 @@ const pillStyles: Record<
 export function StatusPill({ status }: { status: RoutineStatus }) {
   const style = pillStyles[status];
   return (
-    <View className={`flex-row items-center gap-1 rounded-full px-2.5 py-1 ${style.box}`}>
+    <View className={`flex-row items-center gap-1 rounded-xl px-2.5 py-1 ${style.box}`}>
       {style.icon && <Icon name={style.icon} size={14} color={style.color} />}
       <Text className={`text-xs font-semibold ${style.text}`}>{statusLabels[status]}</Text>
     </View>
