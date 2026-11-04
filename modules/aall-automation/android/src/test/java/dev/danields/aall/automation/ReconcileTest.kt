@@ -168,4 +168,9 @@ class ReconcileTest {
     assertEquals(weekly, after.config.routines.first { it.kind == RoutineKind.ACCESS })
     assertEquals(setOf(RoutineKind.GRAYSCALE), after.overrides.keys)
   }
+  @Test fun nextChangeKeepsABoundaryMillisecondsAway() {
+    val now = clock("2026-11-02T12:00:00")
+    val ending = State().copy(timers = mapOf(Timer.PAUSE to Timer.start(now, 50)))
+    assertEquals(now.wall + 50, decide(ending, now).nextChange)
+  }
 }

@@ -145,6 +145,6 @@ object Reconcile {
         if (Rules.runsOn(w, date, anchor)) candidates.addAll(Rules.interval(w, date, zone).toList())
       }
     }
-    return candidates.filter { it > now + 100 }.minOrNull() ?: (now + 60000)
+    return candidates.filter { it > now }.minOrNull() ?: (now + 60000)
   }
 }
