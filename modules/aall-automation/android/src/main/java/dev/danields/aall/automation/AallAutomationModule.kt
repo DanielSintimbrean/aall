@@ -14,6 +14,7 @@ class AallAutomationModule : Module() {
     Function("getSnapshot") { Engine(context).snapshot().toString() }
     Function("reconcile") { Engine(context).reconcile() }
     Function("setConfig") { raw: String -> Engine(context).setConfig(raw) }
+    Function("saveWeekly") { raw: String -> Engine(context).saveWeekly(raw) }
     Function("startFocus") { Engine(context).focus() }
     Function("challenge") { Engine(context).challenge() }
     Function("solve") { answer: String -> Engine(context).solve(answer) }

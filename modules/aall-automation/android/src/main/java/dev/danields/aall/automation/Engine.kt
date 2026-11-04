@@ -27,6 +27,7 @@ class Engine(private val context: Context) {
 
   fun initialize(raw: String) { if(!store.hasConfig()) setConfig(raw) }
   fun setConfig(raw: String) = update { it.copy(config = Config.parse(raw)) }
+  fun saveWeekly(raw: String) = update { Reconcile.saveWeekly(it,Routine.parse(JSONObject(raw))).also { saved -> saved.config.validated() } }
   fun overrideToday(id: String, raw: String) = update { state ->
     val r = Routine.parse(JSONObject(raw))
     require(r.kind.id == id && r.kind != RoutineKind.FOCUS)
@@ -126,6 +127,7 @@ class Engine(private val context: Context) {
       .put("pauseUntil",now+d.pauseRemaining)
       .put("nextChange",d.nextChange)
       .put("permissions",JSONObject().put("accessibility",p.accessibility).put("dnd",p.dnd).put("alarms",p.alarms).put("grayscale",p.grayscale))
+      .put("overrides",JSONObject(d.state.overrides.entries.associate{it.key.id to it.value.routine.toJson()}))
       .put("errors",JSONArray(failures+d.errors))
       .put("statuses",JSONObject(d.statuses.entries.associate{it.key.id to it.value.id}))
   }

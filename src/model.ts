@@ -23,6 +23,7 @@ export type Snapshot = {
   permissions: { accessibility: boolean; dnd: boolean; alarms: boolean; grayscale: boolean };
   errors: string[];
   statuses: Record<RoutineId, RoutineStatus>;
+  overrides: Partial<Record<RoutineId, Routine>>;
 };
 export const statusLabels: Record<RoutineStatus, string> = {
   disabled: "Disabled",

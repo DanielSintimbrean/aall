@@ -80,9 +80,11 @@ object Reconcile {
       blocked = blocked,
       nextChange = nextChange(state, clock),
       errors = errors(routines, dnd, gray, env.permissions),
-      statuses = state.config.routines.associate { it.kind to it.status(env.permissions, it.kind in runningKinds) },
+      statuses = state.config.routines.associate { base -> base.kind to effective(state, base).first.status(env.permissions, base.kind in runningKinds) },
     )
   }
+
+  fun saveWeekly(state: State, routine: Routine) = state.copy(config = state.config.with(routine), overrides = state.overrides - routine.kind)
 
   fun startBedtimeEarly(before: State, clock: Clock): State {
     val state = settleOverrides(before, clock)

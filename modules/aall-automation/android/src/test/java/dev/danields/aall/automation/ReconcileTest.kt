@@ -152,4 +152,20 @@ class ReconcileTest {
     assertEquals(RoutineStatus.READY, status(access.copy(windows = listOf(Window(time(9), time(18), allDays))), allow.copy(dnd = false, grayscale = false)))
     assertEquals(RoutineStatus.NEEDS_SETUP, status(bedtime, allow.copy(dnd = false)))
   }
+  @Test fun statusFollowsARunningOverride() {
+    val tonight = Override(bedtime, LocalDate.parse("2026-11-02"), 0)
+    val weeklyOff = state(bedtime.copy(enabled = false)) { copy(overrides = mapOf(RoutineKind.BEDTIME to tonight)) }
+    assertEquals(RoutineStatus.READY, decide(weeklyOff, clock("2026-11-02T12:00:00")).statuses[RoutineKind.BEDTIME])
+    assertEquals(RoutineStatus.ACTIVE, decide(weeklyOff, clock("2026-11-02T23:00:00")).statuses[RoutineKind.BEDTIME])
+  }
+  @Test fun weeklySaveEndsThatRoutinesOverride() {
+    val access = routine(RoutineKind.ACCESS)
+    val grayscale = routine(RoutineKind.GRAYSCALE)
+    val date = LocalDate.parse("2026-11-02")
+    val before = state(access, grayscale) { copy(overrides = mapOf(RoutineKind.ACCESS to Override(access, date, 0), RoutineKind.GRAYSCALE to Override(grayscale, date, 0))) }
+    val weekly = access.copy(apps = listOf("social"))
+    val after = Reconcile.saveWeekly(before, weekly)
+    assertEquals(weekly, after.config.routines.first { it.kind == RoutineKind.ACCESS })
+    assertEquals(setOf(RoutineKind.GRAYSCALE), after.overrides.keys)
+  }
 }

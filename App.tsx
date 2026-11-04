@@ -27,7 +27,7 @@ import {
   type Routine,
   type Snapshot,
 } from "./src/model";
-import { native, saveConfig, saveToday, snapshot } from "./src/native";
+import { native, saveConfig, saveToday, saveWeekly, snapshot } from "./src/native";
 
 function Button({ title, onPress }: { title: string; onPress(): void }) {
   return (
@@ -125,11 +125,7 @@ function AppContent() {
       if (routine.windows.some((w) => !validTime(w.start) || !validTime(w.end)))
         throw Error("Use HH:mm times.");
       if (today) saveToday(routine);
-      else
-        saveConfig({
-          ...state.config,
-          routines: state.config.routines.map((r) => (r.id === routine.id ? routine : r)),
-        });
+      else saveWeekly(routine);
       setRoutine(undefined);
       setPage("today");
     });
@@ -176,24 +172,27 @@ function AppContent() {
                 {error}
               </Text>
             ))}
-            {state.config.routines.map((r) => (
-              <Pressable
-                key={r.id}
-                onPress={() => edit(r)}
-                className="bg-zinc-900 rounded-2xl p-5 my-2"
-              >
-                <View className="flex-row justify-between">
-                  <Text className="text-white text-xl">{r.title}</Text>
-                  <Text className="text-teal-300">{statusLabels[state.statuses[r.id]]}</Text>
-                </View>
-                <Text className="text-zinc-400 mt-2">
-                  {editors[r.id].session
-                    ? `${state.config.focusMinutes} minutes · ${remaining(state.focusUntil)} remaining`
-                    : r.windows.map((w) => `${w.start}–${w.end}`).join(" · ")}
-                  {editors[r.id].cardNote}
-                </Text>
-              </Pressable>
-            ))}
+            {state.config.routines
+              .map((weekly) => state.overrides[weekly.id] ?? weekly)
+              .map((r) => (
+                <Pressable
+                  key={r.id}
+                  onPress={() => edit(r)}
+                  className="bg-zinc-900 rounded-2xl p-5 my-2"
+                >
+                  <View className="flex-row justify-between">
+                    <Text className="text-white text-xl">{r.title}</Text>
+                    <Text className="text-teal-300">{statusLabels[state.statuses[r.id]]}</Text>
+                  </View>
+                  <Text className="text-zinc-400 mt-2">
+                    {editors[r.id].session
+                      ? `${state.config.focusMinutes} minutes · ${remaining(state.focusUntil)} remaining`
+                      : r.windows.map((w) => `${w.start}–${w.end}`).join(" · ")}
+                    {editors[r.id].cardNote}
+                    {state.overrides[r.id] ? " · only today" : ""}
+                  </Text>
+                </Pressable>
+              ))}
             <Button title="Start focus" onPress={() => act(() => native!.startFocus())} />
             <Button
               title="Pause for 15 minutes"

@@ -2,7 +2,7 @@
 
 Personal Android routines with on-phone editing. React Native, Expo and Uniwind provide the UI; a local Kotlin Expo module owns persistence, scheduling and enforcement. No account or backend. [DESIGN.md](DESIGN.md) specifies the behavior.
 
-All routines start disabled. Today shows scheduled activity and missing permissions. Editors configure allowed hours for app access, active grayscale hours, bedtime, weekdays and per-routine app lists. Focus defaults to 50 minutes. An arithmetic challenge pauses every restriction for 15 minutes. Days off suppress all restrictions for a local calendar date and require 72 elapsed hours of notice.
+All routines start disabled. Today shows scheduled activity, missing permissions and any "only today" hours in effect. Saving weekly settings ends that routine's "only today" change. Editors configure allowed hours for app access, active grayscale hours, bedtime, weekdays and per-routine app lists. Focus defaults to 50 minutes. An arithmetic challenge pauses every restriction for 15 minutes. Days off suppress all restrictions for a local calendar date and require 72 elapsed hours of notice.
 
 ## Development
 
@@ -30,7 +30,7 @@ adb shell pm grant dev.danields.aall android.permission.WRITE_SECURE_SETTINGS
 
 The setup screen has a ten-second grayscale test and manual restoration. Permission and secure-setting readback alone do not prove that GrapheneOS displays grayscale. Verify on the physical phone. Android Settings, phone calls, the launcher and aall remain accessible. This provides personal friction, not tamper-proof enforcement.
 
-Schedules use local wall time and the starting weekday. Focus and bypass use elapsed time during a boot and recover their remaining wall-clock deadline on reboot. Native alarms, boot/time broadcasts and accessibility events reconcile state without React running. Android force-stop suspends an app until the next launch. Day-off midnight boundaries release aall's restrictions without releasing another app's DND rule.
+Schedules use local wall time and the starting weekday. Focus and bypass use elapsed time during a boot and recover their remaining wall-clock deadline on reboot. Native alarms, boot/time broadcasts and accessibility events reconcile state without React running. The app reconciles after each action and when it returns to the foreground, and its one-second snapshot poll only reads. Android force-stop suspends an app until the next launch. Day-off midnight boundaries release aall's restrictions without releasing another app's DND rule.
 
 ## Releases
 
