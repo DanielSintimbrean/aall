@@ -1,2 +1,18 @@
 @import "tailwindcss";
 @import "uniwind";
+
+/* Grayscale is one of this app's own features, so states must differ in lightness, not only hue. */
+@theme {
+  --color-canvas: #0a0e0e;
+  --color-surface: #151b1b;
+  --color-raised: #212a2a;
+  --color-line: #2c3737;
+  --color-ink: #f1f5f4;
+  --color-muted: #a0aeac;
+  --color-accent: #5eead4;
+  --color-on-accent: #04211c;
+  --color-accent-soft: #123a35;
+  --color-warn: #fcd34d;
+  --color-warn-soft: #3a2e0b;
+  --color-danger: #fca5a5;
+}

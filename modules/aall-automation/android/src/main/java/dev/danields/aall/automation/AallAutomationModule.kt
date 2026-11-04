@@ -5,6 +5,11 @@ import expo.modules.kotlin.modules.ModuleDefinition
 import android.content.Intent
 import android.provider.Settings
 import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
+import android.util.Base64
+import java.io.ByteArrayOutputStream
 
 class AallAutomationModule : Module() {
   private val context get() = requireNotNull(appContext.reactContext)
@@ -26,6 +31,11 @@ class AallAutomationModule : Module() {
       context.packageManager.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),0)
         .distinctBy{it.activityInfo.packageName}.map{mapOf("packageName" to it.activityInfo.packageName,"label" to it.loadLabel(context.packageManager).toString())}.sortedBy{it["label"]}
     }
+    AsyncFunction("appIcons") {
+      val launcher=Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+      context.packageManager.queryIntentActivities(launcher,0).distinctBy{it.activityInfo.packageName}
+        .associate{it.activityInfo.packageName to iconDataUri(it.loadIcon(context.packageManager))}
+    }
     Function("openSettings") { kind: String ->
       val intent=when(kind) {
         "accessibility" -> Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
@@ -36,4 +46,15 @@ class AallAutomationModule : Module() {
       context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
   }
+}
+
+private fun iconDataUri(icon: Drawable): String {
+  val size=96
+  val bitmap=Bitmap.createBitmap(size,size,Bitmap.Config.ARGB_8888)
+  icon.setBounds(0,0,size,size)
+  icon.draw(Canvas(bitmap))
+  val png=ByteArrayOutputStream()
+  bitmap.compress(Bitmap.CompressFormat.PNG,100,png)
+  bitmap.recycle()
+  return "data:image/png;base64,"+Base64.encodeToString(png.toByteArray(),Base64.NO_WRAP)
 }
