@@ -7,7 +7,6 @@ AALL_PASSWORD_FILE="${AALL_PASSWORD_FILE:-${XDG_DATA_HOME:-$HOME/.local/share}/a
 [[ -z "$(git status --porcelain)" ]] || { echo "Commit changes before publishing a release." >&2; exit 1; }
 version=$(node -p "require('./package.json').version")
 tag="v$version"
-# Version codes derive from local release time and increase across updates.
 export AALL_VERSION_CODE="${AALL_VERSION_CODE:-$(date +%s)}"
 pnpm typecheck
 pnpm check

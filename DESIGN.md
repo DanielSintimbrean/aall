@@ -1,7 +1,5 @@
 # aall design
 
-Status: approved by the user after the design interview. Setup and implementation are authorized and in progress.
-
 ## Purpose and scope
 
 Personal Android automation app with fixed automation types in code. Daily use means adjusting hours, weekdays, and app lists directly on the phone. No generic rule builder, accounts, server, or external configuration files.
@@ -37,7 +35,7 @@ Seed the scoped features from my-tasker without requiring a runtime connection t
 
 The schedule editor explicitly labels app windows as "Allowed hours" and grayscale windows as "Active hours".
 
-## Time and recovery rules for final review
+## Time and recovery rules
 
 - Overnight schedules belong to their starting weekday. Monday 22:30 to 07:00 ends Tuesday morning.
 - An overnight "Only today" adjustment lasts until that occurrence ends, including after midnight, then the weekly schedule resumes.
@@ -52,7 +50,7 @@ The schedule editor explicitly labels app windows as "Allowed hours" and graysca
 
 - React Native, Expo development builds, and Uniwind for the interface.
 - Local Kotlin Expo module for accessibility-based app blocking, native scheduling, charging events, DND, and grayscale integration.
-- Expo Metro for Android bundling. Evaluate Vite+ for repository tooling and pure TypeScript tests, without replacing Metro.
+- Expo Metro for Android bundling. Vite+ runs repository tooling and pure TypeScript tests.
 - mise pins development tools. Pin package dependencies after checking current compatibility.
 - Persist adjustments locally. Use Android scheduling and persisted native-readable routine state so execution does not depend on the React UI staying open.
 - No Tasker, legacy helper, or Shizuku dependency is assumed.
@@ -66,25 +64,3 @@ The schedule editor explicitly labels app windows as "Allowed hours" and graysca
 - Allow cancelling a day off at any time. Moving it is a cancellation plus a new booking, subject to a fresh 72-hour check.
 - Persist bookings across app restarts and reboots. Day-off dates and scheduling use the phone's local timezone; handle time changes by reconciling state.
 - The day-off UI shows eligible dates and the earliest eligible date. Bookings select individual dates.
-
-The calendar-day boundary, suppression of all routines, and cancellation/rescheduling rules were accepted in interview questions 19 to 21.
-
-## Build and delivery plan
-
-1. Prove the uncertain grayscale capability on the physical device with the modern target SDK. Validate DND and app blocking permissions alongside it.
-2. Build Today and routine editing with native persistence and schedule evaluation.
-3. Implement routine execution, overlap handling, arithmetic bypass, charging activation, and recovery.
-4. Validate overnight schedules, temporary adjustments, reboot recovery, bypass expiry, and permission loss on Android.
-5. Configure reproducible local builds and local release publishing. Keep the signing key outside the repository and reuse it for updates. Publish versioned signed APKs with monotonically increasing Android version codes for Obtainium.
-
-Signing credentials must be supplied securely when release setup begins. Do not invent or request secrets in chat.
-
-## Final confirmation
-
-Interview questions 1 to 21 are resolved. The user confirmed the complete design in question 22 and explicitly authorized implementation. Do not repeat the interview or request that confirmation again.
-
-The first implementation milestone is an independent Expo development APK that verifies native grayscale, DND, and app blocking on the actual phone. A grayscale limitation must be reported and resolved before claiming that capability works.
-
-## Build location update
-
-On 2026-11-04 the user requested local builds and publishing to GitHub Releases, replacing GitHub Actions because hosted builds were too slow.

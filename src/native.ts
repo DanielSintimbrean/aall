@@ -16,11 +16,7 @@ type Native = {
 };
 export const native = requireOptionalNativeModule<Native>("AallAutomation");
 export function snapshot(): Snapshot {
-  if (!native)
-    throw new Error(
-      "Install an aall Android build to use phone automation. Expo Go does not include the native module.",
-    );
-  return JSON.parse(native.getSnapshot());
+  return JSON.parse(native!.getSnapshot());
 }
 export function saveConfig(config: Config) {
   native!.setConfig(JSON.stringify(config));

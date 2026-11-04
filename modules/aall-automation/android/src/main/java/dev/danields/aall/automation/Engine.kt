@@ -39,9 +39,7 @@ class Engine(private val context: Context) {
     require(r.getString("id") == id && id != "focus")
     for(i in 0 until rs.length()) if(rs.getJSONObject(i).getString("id") == id) rs.put(i,r)
     Rules.validate(c)
-    val day = LocalDate.now(zone); var until = day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-    val ws = r.getJSONArray("windows")
-    for(i in 0 until ws.length()) until = maxOf(until, Rules.interval(ws.getJSONObject(i),day,zone).second)
+    val day = LocalDate.now(zone); val until = Rules.overrideExpiry(r,day,zone)
     put("today.$id", JSONObject().put("routine",r).put("date",day.toString()).put("until",until).toString()); reconcile()
   }
   fun book(date: String) { require(Rules.canBook(date,System.currentTimeMillis(),zone)) { "Book at least 72 elapsed hours before midnight." }; val days = daysOff().toMutableSet(); days.add(date); put("daysOff",JSONArray(days.toList()).toString()); reconcile() }

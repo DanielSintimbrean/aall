@@ -1,6 +1,6 @@
 # aall
 
-Personal Android routines with on-phone editing. React Native, Expo and Uniwind provide the UI; a local Kotlin Expo module owns persistence, scheduling and enforcement. No account or backend. The approved behavior is in [DESIGN.md](DESIGN.md).
+Personal Android routines with on-phone editing. React Native, Expo and Uniwind provide the UI; a local Kotlin Expo module owns persistence, scheduling and enforcement. No account or backend. [DESIGN.md](DESIGN.md) specifies the behavior.
 
 All routines start disabled. Today shows scheduled activity and missing permissions. Editors configure allowed hours for app access, active grayscale hours, bedtime, weekdays and per-routine app lists. Focus defaults to 50 minutes. An arithmetic challenge pauses every restriction for 15 minutes. Days off suppress all restrictions for a local calendar date and require 72 elapsed hours of notice.
 
@@ -38,8 +38,8 @@ The public repository is https://github.com/DanielSintimbrean/aall. Builds and r
 
 Run `pnpm release` after committing the new version. It uses the local signing files in `~/.local/share/aall/signing/`. Override `AALL_KEYSTORE` and `AALL_PASSWORD_FILE` to use different private paths. The script runs checks, builds the standalone APK, signs it, verifies its signature and alignment, and publishes it to GitHub Releases. Bump `package.json` and `app.config.ts` versions before each new release. Version codes default to Unix seconds, increasing across releases. Do not release twice with the same tag.
 
-The signing key is stored locally at `/home/danields/.local/share/aall/signing/aall.jks`. Keep a private backup of it and its password. The password file has mode 600. Never recreate the signing key for an update. Passwords and signing keys stay outside the repository.
+The default key path is `~/.local/share/aall/signing/aall.jks`. Keep a private backup of it and its password. Never recreate the key, because Android rejects updates signed with a different one.
 
 ## Validation
 
-See [VALIDATION.md](VALIDATION.md) for the latest measured checks and outstanding device tests. The icon comes from `../danields.dev/public/icon-512.png`; initial app suggestions match `../my-tasker/config.json`. Neither reference project is required at runtime.
+See [VALIDATION.md](VALIDATION.md) for the latest measured checks and outstanding device tests.

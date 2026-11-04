@@ -72,10 +72,7 @@ function AppContent() {
   const [answer, setAnswer] = useState("");
   const [minutes, setMinutes] = useState("50");
   const refresh = useCallback(() => {
-    if (native) {
-      const s = snapshot();
-      setState(s);
-    }
+    if (native) setState(snapshot());
   }, []);
   const act = (fn: () => void) => {
     try {
@@ -87,9 +84,9 @@ function AppContent() {
   };
   useEffect(() => {
     if (native) {
-      const installed = native!.installedApps();
+      const installed = native.installedApps();
       const packages = new Set(installed.map((app) => app.packageName));
-      native!.initialize(
+      native.initialize(
         JSON.stringify({
           ...defaults,
           routines: defaults.routines.map((r) => ({
@@ -100,7 +97,7 @@ function AppContent() {
         }),
       );
       refresh();
-      setApps(native!.installedApps());
+      setApps(installed);
     }
     const timer = setInterval(refresh, 1000);
     const sub = AppState.addEventListener("change", refresh);
@@ -113,9 +110,7 @@ function AppContent() {
     return (
       <SafeAreaView className="flex-1 bg-zinc-950 p-6">
         <Text className="text-white text-2xl">Install the aall Android APK</Text>
-        <Text className="text-zinc-400">
-          Automation needs the local Kotlin module. Expo Go cannot run it.
-        </Text>
+        <Text className="text-zinc-400">Expo Go cannot run aall.</Text>
       </SafeAreaView>
     );
   const save = (today: boolean) =>
@@ -145,12 +140,7 @@ function AppContent() {
         <View className="flex-row items-center justify-between mb-6">
           <Text className="text-white text-4xl font-bold">aall</Text>
           {page !== "today" && (
-            <Button
-              title="Back"
-              onPress={() => {
-                setPage(page === "apps" ? "edit" : "today");
-              }}
-            />
+            <Button title="Back" onPress={() => setPage(page === "apps" ? "edit" : "today")} />
           )}
         </View>
         {page === "today" && (
@@ -172,7 +162,7 @@ function AppContent() {
                     : "Time is yours"}
             </Text>
             <Text className="text-zinc-400 mb-4">
-              Next schedule boundary {new Date(state.nextChange).toLocaleString()}
+              Next change {new Date(state.nextChange).toLocaleString()}
             </Text>
             {state.errors.map((error) => (
               <Text key={error} className="text-amber-300 mb-2">
@@ -234,13 +224,16 @@ function AppContent() {
                 onValueChange={(enabled) => setRoutine({ ...routine, enabled })}
               />
             </View>
-            <Text className="text-zinc-400 mt-3">
-              {routine.id === "access"
-                ? "Selected apps are blocked outside allowed hours."
-                : routine.id === "bedtime"
-                  ? "Apps outside the allowed list are blocked. Charging can start bedtime early."
-                  : "Active hours follow the starting weekday, including overnight."}
-            </Text>
+            {routine.id === "access" && (
+              <Text className="text-zinc-400 mt-3">
+                Selected apps are blocked outside allowed hours.
+              </Text>
+            )}
+            {routine.id === "bedtime" && (
+              <Text className="text-zinc-400 mt-3">
+                Apps outside the allowed list are blocked. Charging can start bedtime early.
+              </Text>
+            )}
             {routine.id === "focus" && (
               <>
                 <Field
@@ -362,10 +355,6 @@ function AppContent() {
             {routine.id !== "focus" && (
               <Button title="Apply only today" onPress={() => save(true)} />
             )}
-            <Text className="text-zinc-500 mt-2">
-              Only today lasts through the end of an overnight occurrence. Weekly settings resume
-              afterward.
-            </Text>
           </>
         )}
         {page === "apps" && routine && (
@@ -408,7 +397,7 @@ function AppContent() {
               onPress={() =>
                 act(() => {
                   if (native!.solve(answer)) setPage("today");
-                  else Alert.alert("Try again", "The same expression stays until you solve it.");
+                  else Alert.alert("Try again");
                 })
               }
             />
@@ -418,8 +407,8 @@ function AppContent() {
           <>
             <Text className="text-white text-3xl">Days off</Text>
             <Text className="text-zinc-400 my-4">
-              All restrictions pause midnight to midnight. Book at least 72 elapsed hours ahead.
-              Earliest eligible date: {earliestDay()}.
+              Restrictions pause from midnight to midnight. Book at least 72 hours ahead. Earliest
+              date: {earliestDay()}.
             </Text>
             <Field label="Date · YYYY-MM-DD" value={date} onChangeText={setDate} />
             <Button title="Book day off" onPress={() => act(() => native!.bookDay(date))} />
@@ -430,9 +419,6 @@ function AppContent() {
                 onPress={() => act(() => native!.cancelDay(d))}
               />
             ))}
-            <Text className="text-zinc-500">
-              To move a booking, cancel it and book a new eligible date.
-            </Text>
           </>
         )}
         {page === "setup" && (
@@ -450,9 +436,8 @@ function AppContent() {
               android.permission.WRITE_SECURE_SETTINGS
             </Text>
             <Text className="text-zinc-400">
-              For sideloaded apps, Android may require Allow restricted settings in app info before
-              accessibility can be enabled. Grayscale on GrapheneOS needs physical verification.
-              Settings remaining accessible is intentional.
+              Sideloaded apps may need Allow restricted settings in app info before accessibility
+              can be enabled.
             </Text>
             <Button
               title="Test grayscale for 10 seconds"
