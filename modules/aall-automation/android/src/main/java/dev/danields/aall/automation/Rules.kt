@@ -4,6 +4,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
+private const val DAY_OFF_NOTICE = 72L * 3600000
+
 object Rules {
   val alwaysAllowed = setOf(
     "com.android.settings",
@@ -62,7 +64,12 @@ object Rules {
   }
 
   fun canBook(date: String, now: Long, zone: ZoneId): Boolean =
-    LocalDate.parse(date).atStartOfDay(zone).toInstant().toEpochMilli() - now >= 72L * 3600000
+    LocalDate.parse(date).atStartOfDay(zone).toInstant().toEpochMilli() - now >= DAY_OFF_NOTICE
+
+  fun earliestDayOff(now: Long, zone: ZoneId): LocalDate {
+    val date = Instant.ofEpochMilli(now + DAY_OFF_NOTICE).atZone(zone).toLocalDate()
+    return if (canBook(date.toString(), now, zone)) date else date.plusDays(1)
+  }
 
   fun challenge(): Pair<String, Int> {
     val random = java.security.SecureRandom()

@@ -6,8 +6,8 @@
 
 - Expo dependency compatibility check.
 - TypeScript strict typecheck, Vite+ formatting and lint, ktlint formatting and lint for Kotlin.
-- Four shared TypeScript tests for defaults, input validation and 72-hour booking boundaries.
-- 41 native JVM tests for overnight ownership, Only today, elapsed timers and reboot deadlines, overlapping requests, bypass suppression and expiry, retry verification, DST booking boundaries, timezone-aware temporary expiry, 10,000 generated arithmetic challenges, config parsing, charging-started bedtime, day-off transitions, DND ownership, blocking rules, routine status, next-change scheduling and status notices.
+- 25 shared TypeScript tests for defaults, input validation, screen labels and routine drafts.
+- 43 native JVM tests for overnight ownership, Only today, elapsed timers and reboot deadlines, overlapping requests, bypass suppression and expiry, retry verification, DST booking boundaries, the earliest bookable day off, timezone-aware temporary expiry, 10,000 generated arithmetic challenges, config parsing, charging-started bedtime, day-off transitions, DND ownership, blocking rules, routine status, next-change scheduling and status notices.
 - Metro production Android export.
 - Independent arm64 standalone release APK build, including native compilation and Android release lint.
 - APK signed with persistent release certificate, installed and launched through ADB without Metro.

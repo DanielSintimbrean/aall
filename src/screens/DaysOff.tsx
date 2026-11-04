@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Alert, Text, ToastAndroid, View } from "react-native";
-import { canBookDay, dateLabel, earliestDay, localDate } from "../model";
+import { dateLabel, localDate } from "../model";
 import { native } from "../native";
 import { useStore } from "../store";
 import { Button, Card, DateField, Divider, Notice, Page, Row, Section } from "../ui";
 
 export function DaysOff() {
   const { state, act } = useStore();
-  const earliest = earliestDay();
+  const earliest = state.earliestDayOff;
   const [date, setDate] = useState(earliest);
   // oxlint-disable-next-line react/purity -- The snapshot poll re-renders with the current date.
   const today = localDate(new Date());
@@ -16,7 +16,7 @@ export function DaysOff() {
   const cancel = (day: string) =>
     Alert.alert(
       `Cancel ${dateLabel(day)}?`,
-      canBookDay(day)
+      day >= earliest
         ? "You can book it again while it's still 72 hours away."
         : "It's less than 72 hours away, so you won't be able to book it again.",
       [

@@ -17,6 +17,7 @@ export type Snapshot = {
   active: string[];
   dayOff: boolean;
   daysOff: string[];
+  earliestDayOff: string;
   focusUntil: number;
   pauseUntil: number;
   nextChange: number;
@@ -174,16 +175,6 @@ export function parseDate(value: string): Date | null {
   const [y, m, d] = value.split("-").map(Number);
   const result = new Date(y, m - 1, d);
   return localDate(result) === value ? result : null;
-}
-export function canBookDay(value: string, now = Date.now()) {
-  const date = parseDate(value);
-  return !!date && date.getTime() - now >= 72 * 60 * 60 * 1000;
-}
-export function earliestDay(now = Date.now()) {
-  const date = new Date(now + 72 * 60 * 60 * 1000);
-  date.setHours(0, 0, 0, 0);
-  if (date.getTime() < now + 72 * 60 * 60 * 1000) date.setDate(date.getDate() + 1);
-  return localDate(date);
 }
 
 export const weekdays = [
