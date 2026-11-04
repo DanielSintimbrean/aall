@@ -3,6 +3,7 @@ package dev.danields.aall.automation
 import java.time.*
 
 object Rules {
+  val alwaysAllowed = setOf("com.android.settings","com.android.systemui","com.google.android.dialer","com.samsung.android.dialer","com.android.dialer","com.android.server.telecom","com.android.emergency","com.android.permissioncontroller","com.google.android.permissioncontroller","com.google.android.packageinstaller")
   fun remaining(sameBoot: Boolean, elapsedDeadline: Long, elapsedNow: Long, wallDeadline: Long, wallNow: Long, duration: Long): Long =
     (if(sameBoot) elapsedDeadline-elapsedNow else wallDeadline-wallNow).coerceIn(0,duration)
   fun verifies(answer: String, expected: Int) = answer.trim().toIntOrNull() == expected
