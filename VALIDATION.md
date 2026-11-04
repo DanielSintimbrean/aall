@@ -45,6 +45,8 @@ Physical phone, release-signed build installed over 0.1.1 with settings preserve
 - Swiping it away during Focus held through going home and reopening aall. Android logged one post per session, so app switches did not repost it.
 - Solving the sum showed Paused with a 15-minute countdown. Installing an update during the pause kept the notification and its deadline. When the pause ended, the notification went away.
 
+These checks ran on a build that also set a notification timeout and public lock-screen visibility. Both were removed afterward, so the timer now relies on the reconcile alarm alone to clear the notification. The second Focus session showed that alarm releasing DND and grayscale on time, but this build has not run on the phone.
+
 Not tested on the phone: the lock screen, App access, Bedtime and Grayscale notices, day off, needs setup and granting DND access after the channel exists. JVM tests cover the wording and priority of those notices.
 
 `uiautomator dump` suspends accessibility services while it runs, so aall briefly reports accessibility as missing during UI automation. Confirm that state from a screenshot taken without a dump.

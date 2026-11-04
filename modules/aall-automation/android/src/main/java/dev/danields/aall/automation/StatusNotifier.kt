@@ -60,7 +60,6 @@ class StatusNotifier(private val context: Context, private val prefs: SharedPref
       .setColor(Color.parseColor("#5eead4"))
       .setContentTitle(notice.title)
       .setCategory(Notification.CATEGORY_STATUS)
-      .setVisibility(Notification.VISIBILITY_PUBLIC)
       .setOngoing(true)
       .setOnlyAlertOnce(true)
       .setLocalOnly(true)
@@ -84,8 +83,6 @@ class StatusNotifier(private val context: Context, private val prefs: SharedPref
       builder.setWhen(
         deadline
       ).setShowWhen(true).setUsesChronometer(true).setChronometerCountDown(true)
-      // A late alarm should not leave a timer counting past zero.
-      builder.setTimeoutAfter((deadline - System.currentTimeMillis()).coerceAtLeast(1))
     }
     return builder.build()
   }
