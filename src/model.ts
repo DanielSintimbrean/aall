@@ -193,11 +193,13 @@ export const earliestChargingStart = "20:00";
 export function minutesLeft(until: number, now = Date.now()) {
   return Math.max(0, Math.ceil((until - now) / 60000));
 }
-export function timeToDate(value: string, base = new Date()) {
+export function focusMinutesLeft(state: Pick<Snapshot, "focusUntil" | "active">, now = Date.now()) {
+  return state.active.includes("focus") ? minutesLeft(state.focusUntil, now) : 0;
+}
+export function timeToDate(value: string) {
   const [hours, minutes] = value.split(":").map(Number);
-  const date = new Date(base);
-  date.setHours(hours, minutes, 0, 0);
-  return date;
+  // A fixed winter date, because today could be missing this time at a clock change.
+  return new Date(2000, 0, 1, hours, minutes);
 }
 export function dateToTime(date: Date) {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;

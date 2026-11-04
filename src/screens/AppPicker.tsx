@@ -33,6 +33,10 @@ export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
       ),
     [apps, initial],
   );
+  const sharedLabels = useMemo(() => {
+    const labels = apps.map((app) => app.label);
+    return new Set(labels.filter((label, index) => labels.indexOf(label) !== index));
+  }, [apps]);
   const needle = query.trim().toLowerCase();
   const visible = ordered.filter((app) =>
     `${app.label} ${app.packageName}`.toLowerCase().includes(needle),
@@ -84,9 +88,16 @@ export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
                   </Text>
                 </View>
               )}
-              <Text numberOfLines={1} className="flex-1 text-base text-ink">
-                {item.label}
-              </Text>
+              <View className="flex-1">
+                <Text numberOfLines={1} className="text-base text-ink">
+                  {item.label}
+                </Text>
+                {sharedLabels.has(item.label) && (
+                  <Text numberOfLines={1} className="text-sm text-muted">
+                    {item.packageName}
+                  </Text>
+                )}
+              </View>
               <Icon
                 name={checked ? "checkbox-marked-circle" : "checkbox-blank-circle-outline"}
                 size={26}

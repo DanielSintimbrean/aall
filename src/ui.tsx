@@ -411,7 +411,7 @@ export function DateField({
 
 export function DayPicker({ days, onChange }: { days: number[]; onChange(days: number[]): void }) {
   return (
-    <View className="flex-row justify-between">
+    <View className="flex-row justify-between gap-1">
       {weekdays.map((day) => {
         const selected = days.includes(day.id);
         return (
@@ -428,7 +428,7 @@ export function DayPicker({ days, onChange }: { days: number[]; onChange(days: n
                   : [...days, day.id].sort((a, b) => a - b),
               )
             }
-            className={`h-11 w-11 items-center justify-center rounded-full ${selected ? "bg-accent" : "border border-line"}`}
+            className={`aspect-square max-w-11 flex-1 items-center justify-center rounded-full ${selected ? "bg-accent" : "border border-line"}`}
           >
             <Text className={`text-sm font-semibold ${selected ? "text-on-accent" : "text-muted"}`}>
               {day.short}

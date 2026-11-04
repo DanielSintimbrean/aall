@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import {
   canBookDay,
   clockLabel,
+  dateToTime,
+  focusMinutesLeft,
   daysLabel,
   defaults,
   earliestDay,
@@ -9,6 +11,7 @@ import {
   isOvernight,
   parseDate,
   parseMinutes,
+  timeToDate,
   validTime,
   windowsLabel,
 } from "./model";
@@ -58,5 +61,22 @@ describe("screen labels", () => {
     );
     expect(errorMessage(failure)).toBe("Book at least 72 elapsed hours before midnight.");
     expect(errorMessage(Error("Plain"))).toBe("Plain");
+  });
+  it("keeps a time inside the hour skipped by a clock change", () => {
+    const zone = process.env.TZ;
+    process.env.TZ = "Europe/Madrid";
+    vi.useFakeTimers({ now: new Date(2026, 2, 29, 12) });
+    try {
+      expect(dateToTime(timeToDate("02:30"))).toBe("02:30");
+    } finally {
+      vi.useRealTimers();
+      process.env.TZ = zone;
+    }
+  });
+  it("counts focus only while the routine is running", () => {
+    const now = 1000;
+    const focusUntil = now + 10 * 60000;
+    expect(focusMinutesLeft({ focusUntil, active: ["focus"] }, now)).toBe(10);
+    expect(focusMinutesLeft({ focusUntil, active: [] }, now)).toBe(0);
   });
 });
