@@ -9,6 +9,7 @@ import React, {
   type ReactNode,
 } from "react";
 import { Alert, AppState } from "react-native";
+import { beginDraft, editDraft, type Draft, type DraftEdit } from "./draft";
 import { defaults, errorMessage, type InstalledApp, type Routine, type Snapshot } from "./model";
 import { native, snapshot } from "./native";
 
@@ -19,15 +20,11 @@ type Store = {
   loadIcons(): void;
   act(fn: () => void): boolean;
 };
-type Draft = {
-  routine: Routine;
-  minutes: string;
-};
 type Drafts = {
   draft?: Draft;
   original?: Draft;
   begin(routine: Routine, minutes: number): void;
-  update(change: Partial<Draft>): void;
+  dispatch(edit: DraftEdit): void;
 };
 const StoreContext = createContext<Store | null>(null);
 const DraftContext = createContext<Drafts | null>(null);
@@ -119,16 +116,12 @@ export function StoreProvider({
       draft,
       original,
       begin(routine, minutes) {
-        const next = {
-          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- JSON copy of a Routine.
-          routine: JSON.parse(JSON.stringify(routine)) as Routine,
-          minutes: String(minutes),
-        };
+        const next = beginDraft(routine, minutes);
         setOriginal(next);
         setDraft(next);
       },
-      update(change) {
-        setDraft((current) => current && { ...current, ...change });
+      dispatch(edit) {
+        setDraft((current) => current && editDraft(current, edit));
       },
     }),
     [draft, original],

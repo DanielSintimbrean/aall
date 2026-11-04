@@ -409,7 +409,7 @@ export function DateField({
   );
 }
 
-export function DayPicker({ days, onChange }: { days: number[]; onChange(days: number[]): void }) {
+export function DayPicker({ days, onToggle }: { days: number[]; onToggle(day: number): void }) {
   return (
     <View className="flex-row justify-between gap-1">
       {weekdays.map((day) => {
@@ -421,13 +421,7 @@ export function DayPicker({ days, onChange }: { days: number[]; onChange(days: n
             accessibilityLabel={day.name}
             accessibilityState={{ checked: selected }}
             hitSlop={2}
-            onPress={() =>
-              onChange(
-                selected
-                  ? days.filter((id) => id !== day.id)
-                  : [...days, day.id].sort((a, b) => a - b),
-              )
-            }
+            onPress={() => onToggle(day.id)}
             className={`aspect-square max-w-11 flex-1 items-center justify-center rounded-full ${selected ? "bg-accent" : "border border-line"}`}
           >
             <Text className={`text-sm font-semibold ${selected ? "text-on-accent" : "text-muted"}`}>
@@ -443,25 +437,23 @@ export function DayPicker({ days, onChange }: { days: number[]; onChange(days: n
 export function Stepper({
   value,
   onChange,
+  onStep,
   label,
   error,
 }: {
   value: string;
   onChange(value: string): void;
+  onStep(by: number): void;
   label: string;
   error?: boolean;
 }) {
-  const step = (by: number) => {
-    const current = Number(value) || 0;
-    onChange(String(Math.min(1440, Math.max(1, current + by))));
-  };
   const button = (icon: IconName, name: string, by: number) => (
     <View className="overflow-hidden rounded-2xl">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={name}
         android_ripple={ripple}
-        onPress={() => step(by)}
+        onPress={() => onStep(by)}
         className="h-14 w-14 items-center justify-center bg-raised"
       >
         <Icon name={icon} color={colors.ink} />
