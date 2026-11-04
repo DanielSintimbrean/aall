@@ -23,6 +23,15 @@
 - Wrong arithmetic answers kept the same challenge. The correct answer displayed a 15-minute pause, deactivated aall's implicit DND rule and restored grayscale enabled/mode to 0/0.
 - Other Android DND rules remained present. An independently active competing DND rule was not toggled for testing.
 
+## Interface checks
+
+Physical phone, on the build rebased onto `Reconcile`:
+
+- Android back moved through editor, app picker, days off, setup and pause, and returned to Today without closing the app.
+- Leaving an edited routine asked to discard. Keep editing preserved the change. A weekly save persisted after reopening and was restored afterward.
+- Native time and date dialogs opened, and the date dialog started at the earliest bookable date. A day off was booked and cancelled.
+- A wrong answer showed an inline error and kept the same sum. The right answer showed Paused on Today. Check answer stayed above the keyboard.
+
 ## Remaining verification
 
 - The device checks above ran before the logic moved into `Reconcile` and the snapshot became read-only. Repeat them on the current build.

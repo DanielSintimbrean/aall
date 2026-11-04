@@ -7,6 +7,7 @@ type Native = {
   setConfig(config: string): void;
   saveWeekly(routine: string): void;
   installedApps(): InstalledApp[];
+  appIcons(): Promise<Record<string, string>>;
   startFocus(): void;
   challenge(): string;
   solve(answer: string): boolean;
