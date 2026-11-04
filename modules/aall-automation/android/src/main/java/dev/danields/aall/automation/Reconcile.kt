@@ -114,7 +114,7 @@ object Reconcile {
     overrides = state.overrides - routine.kind
   )
 
-  fun startBedtimeEarly(before: State, clock: Clock): State {
+  private fun startBedtimeEarly(before: State, clock: Clock): State {
     val state = settleOverrides(before, clock)
     val base = state.config.routines.firstOrNull { it.kind == RoutineKind.BEDTIME } ?: return state
     val (r, anchor) = effective(state, base)

@@ -1,7 +1,6 @@
 package dev.danields.aall.automation
 
 import android.accessibilityservice.AccessibilityService
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -21,13 +20,7 @@ class AallAccessibilityService : AccessibilityService() {
   var foreground = ""
   private var overlay: android.view.View? = null
   private var powerRegistered = false
-  private val powerReceiver = object : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-      val engine = Engine(context)
-      if (intent.action == Intent.ACTION_POWER_CONNECTED) engine.charging()
-      engine.reconcile()
-    }
-  }
+  private val powerReceiver = AutomationReceiver()
 
   override fun onServiceConnected() {
     instance = this

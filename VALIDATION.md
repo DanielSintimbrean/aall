@@ -36,11 +36,19 @@ Physical phone, on the build rebased onto `Reconcile`:
 
 `uiautomator dump` suspends accessibility services while it runs, so aall briefly reports accessibility as missing during UI automation. Confirm that state from a screenshot taken without a dump.
 
+## Charging events
+
+Physical phone, with simulated events. `dumpsys battery unplug` and `reset` sent the real `ACTION_POWER_*` broadcasts, confirmed by logging in `AutomationReceiver`. No cable was moved.
+
+- With accessibility off, eight power broadcasts reached no manifest receiver while the app process stayed alive. `MY_PACKAGE_REPLACED` still reached it, so the power actions were removed from the manifest.
+- Android 17 sends `ACTION_POWER_CONNECTED` about 10 ms before `BATTERY_CHANGED`. In five of six connects the sticky battery status still read unplugged, so the receiver passes the plug state from the action into reconcile.
+- With Bedtime enabled in its early-start window, a connect turned on DND and grayscale within a second and Today showed Bedtime running. Unplugging kept both on. Accessibility must be on for a charging change to reach reconcile immediately. Otherwise the next reconcile sees it.
+
 ## Remaining verification
 
 - The device checks above ran before the logic moved into `Reconcile` and the snapshot became read-only. Repeat them on the current build.
 - Reboot, timezone and clock changes on the physical phone.
-- Overnight and charging-triggered bedtime through wake-up time on the physical phone.
+- Overnight and charging-triggered bedtime through wake-up time on the physical phone, including a real cable change.
 - Day-off midnight transitions and a full 15-minute bypass while the device is idle.
 - Color exceptions while Camera, Photos and Maps are foregrounded.
 - Obtainium update installation.

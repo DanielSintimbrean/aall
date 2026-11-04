@@ -110,16 +110,11 @@ class Engine(private val context: Context) {
     return true
   }
 
-  fun charging() {
-    val state = store.load()
-    store.save(state, Reconcile.startBedtimeEarly(state, clock()))
-  }
-
   fun snapshot() = snapshot(Reconcile.decide(store.load(), environment()))
 
-  fun reconcile() {
+  fun reconcile(plugged: Boolean? = null) {
     val before = store.load()
-    val decision = Reconcile.decide(before, environment())
+    val decision = Reconcile.decide(before, environment(plugged))
     store.save(before, decision.state)
     val failures = mutableListOf<String>()
     decision.setDnd?.let { wanted ->
@@ -142,7 +137,7 @@ class Engine(private val context: Context) {
     put("effectFailures", JSONArray(failures).toString())
   }
 
-  private fun environment(): Environment {
+  private fun environment(plugged: Boolean? = null): Environment {
     val battery = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
     val launcher = context.packageManager.resolveActivity(
       Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
@@ -153,7 +148,7 @@ class Engine(private val context: Context) {
       clock = clock(),
       foreground = AallAccessibilityService.instance?.foreground ?: "",
       alwaysAllowed = Rules.alwaysAllowed + listOfNotNull(context.packageName, launcher, dialer),
-      plugged = (battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0,
+      plugged = plugged ?: ((battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0),
       permissions = permissions()
     )
   }
