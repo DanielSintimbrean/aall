@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-: "${AALL_KEYSTORE:?Set AALL_KEYSTORE to the persistent release keystore}"
-: "${AALL_PASSWORD_FILE:?Set AALL_PASSWORD_FILE to a private file containing its password}"
+AALL_KEYSTORE="${AALL_KEYSTORE:-${XDG_DATA_HOME:-$HOME/.local/share}/aall/signing/aall.jks}"
+AALL_PASSWORD_FILE="${AALL_PASSWORD_FILE:-${XDG_DATA_HOME:-$HOME/.local/share}/aall/signing/password}"
+[[ -f "$AALL_KEYSTORE" && -f "$AALL_PASSWORD_FILE" ]] || { echo "Provide AALL_KEYSTORE and AALL_PASSWORD_FILE, or set up local signing files." >&2; exit 1; }
+[[ -z "$(git status --porcelain)" ]] || { echo "Commit changes before publishing a release." >&2; exit 1; }
 version=$(node -p "require('./package.json').version")
 tag="v$version"
 # Version codes derive from local release time and increase across updates.

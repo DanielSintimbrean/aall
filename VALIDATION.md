@@ -12,6 +12,8 @@
 - An earlier GitHub-hosted full APK build passed. At the user's request, builds and publishing now run locally.
 - Independent arm64 standalone release APK build, including native compilation and Android release lint.
 - APK signed with persistent release certificate, installed and launched through ADB without Metro.
+- Version 0.1.1 built, signed and published locally. The downloaded GitHub Release asset matched the local SHA-256 and installed successfully over the earlier build, preserving app data.
+- GitHub Actions disabled at repository level and its workflow and signing secrets removed.
 - Native WRITE_SECURE_SETTINGS permission granted on the physical phone.
 - Native grayscale test changed daltonizer enabled/mode to 1/0, then restored the original 0/0. The user visually confirmed gray buttons followed by restored color.
 
@@ -30,7 +32,7 @@
 - Overnight and charging-triggered bedtime through wake-up time on the physical phone.
 - Day-off midnight transitions and a full 15-minute bypass while the device is idle.
 - Color exceptions while Camera, Photos and Maps are foregrounded.
-- Signed Release download and Obtainium update installation.
+- Obtainium update installation.
 
 These checks require real elapsed time or changes to the phone's operating state. JVM tests cover the rule boundaries but do not prove Android delivery under every battery or idle condition.
 
