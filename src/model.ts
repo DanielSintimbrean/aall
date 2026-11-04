@@ -208,7 +208,7 @@ export function isOvernight(window: Window) {
   return window.end <= window.start;
 }
 export function daysLabel(days: number[]) {
-  const set = [...days].sort().join("");
+  const set = [...days].sort((a, b) => a - b).join("");
   if (set === "1234567") return "Every day";
   if (set === "12345") return "Weekdays";
   if (set === "67") return "Weekends";

@@ -74,6 +74,7 @@ export function StoreProvider({
         }),
       );
       native.reconcile();
+      // oxlint-disable-next-line react/set-state-in-effect -- Native data loads once after mount.
       setApps(installed);
       refresh();
     }
@@ -119,6 +120,7 @@ export function StoreProvider({
       original,
       begin(routine, minutes) {
         const next = {
+          // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- JSON copy of a Routine.
           routine: JSON.parse(JSON.stringify(routine)) as Routine,
           minutes: String(minutes),
         };
@@ -131,6 +133,7 @@ export function StoreProvider({
     }),
     [draft, original],
   );
+  // oxlint-disable-next-line react/refs -- The ref is only read inside loadIcons, not during render.
   if (!native || !store) return fallback;
   return (
     <StoreContext.Provider value={store}>

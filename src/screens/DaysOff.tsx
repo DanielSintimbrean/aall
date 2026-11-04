@@ -9,6 +9,7 @@ export function DaysOff() {
   const { state, act } = useStore();
   const earliest = earliestDay();
   const [date, setDate] = useState(earliest);
+  // oxlint-disable-next-line react/purity -- The snapshot poll re-renders with the current date.
   const today = localDate(new Date());
   const booked = state.daysOff.filter((day) => day >= today).sort();
   const alreadyBooked = booked.includes(date);
