@@ -22,7 +22,7 @@ It also includes scheduled days off without restrictions. A day off must be book
 - Scheduled bedtime starts without requiring charging. Charging during an earlier evening window can start bedtime early. Unplugging does not cancel it. The configured wake-up time ends bedtime.
 - Today is the home screen: active routines and their reasons, next change, Start Focus, and shortcuts for times, days, and app lists.
 - One-time ADB setup for grayscale is acceptable, subject to proving it works on the actual phone.
-- Public GitHub repository, signed APK builds through GitHub Actions, GitHub Releases, and Obtainium updates. Personal adjustments stay on-device.
+- Public GitHub repository, locally built and signed APKs, GitHub Releases, and Obtainium updates. Personal adjustments stay on-device.
 
 ## Initial defaults
 
@@ -75,7 +75,7 @@ The calendar-day boundary, suppression of all routines, and cancellation/resched
 2. Build Today and routine editing with native persistence and schedule evaluation.
 3. Implement routine execution, overlap handling, arithmetic bypass, charging activation, and recovery.
 4. Validate overnight schedules, temporary adjustments, reboot recovery, bypass expiry, and permission loss on Android.
-5. Configure reproducible local builds and GitHub Actions. Keep the signing key outside the repository and reuse it for updates. Publish versioned signed APKs with monotonically increasing Android version codes for Obtainium.
+5. Configure reproducible local builds and local release publishing. Keep the signing key outside the repository and reuse it for updates. Publish versioned signed APKs with monotonically increasing Android version codes for Obtainium.
 
 Signing credentials must be supplied securely when release setup begins. Do not invent or request secrets in chat.
 
@@ -84,3 +84,7 @@ Signing credentials must be supplied securely when release setup begins. Do not 
 Interview questions 1 to 21 are resolved. The user confirmed the complete design in question 22 and explicitly authorized implementation. Do not repeat the interview or request that confirmation again.
 
 The first implementation milestone is an independent Expo development APK that verifies native grayscale, DND, and app blocking on the actual phone. A grayscale limitation must be reported and resolved before claiming that capability works.
+
+## Build location update
+
+On 2026-11-04 the user requested local builds and publishing to GitHub Releases, replacing GitHub Actions because hosted builds were too slow.

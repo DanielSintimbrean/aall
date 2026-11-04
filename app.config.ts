@@ -1,5 +1,5 @@
 import type { ExpoConfig } from "expo/config";
-const version = "0.1.0";
+const version = "0.1.1";
 export default {
   name: "aall",
   slug: "aall",

@@ -16,7 +16,7 @@ adb install -r artifacts/aall.apk
 
 Android SDK platform 37.0, build tools 37.0.0 and NDK 27.1.12297006 are required. Install them with `sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0' 'ndk;27.1.12297006'`. Expo uses Metro for Android. Vite+ runs formatting, lint and shared TypeScript tests. Native JVM tests run during APK builds. `pnpm start` and `pnpm android` provide a development client. Expo Go cannot load this module.
 
-Local APKs use the generated Expo development signing certificate. Releases are re-signed with a persistent private key in GitHub Actions. Do not use development APKs as an Obtainium update source. Different signing certificates require uninstalling before switching and uninstalling deletes local settings.
+Local APKs use the generated Expo development signing certificate. Releases are built and signed locally with a persistent private key. Do not use development APKs as an Obtainium update source. Different signing certificates require uninstalling before switching and uninstalling deletes local settings.
 
 ## Phone setup
 
@@ -34,9 +34,11 @@ Schedules use local wall time and the starting weekday. Focus and bypass use ela
 
 ## Releases
 
-The public repository is https://github.com/DanielSintimbrean/aall. Main and pull requests build an APK artifact and run checks. Tags matching `v*` publish a signed `aall-signed.apk` to GitHub Releases. Add this repository URL to Obtainium using its GitHub source.
+The public repository is https://github.com/DanielSintimbrean/aall. Builds and releases run locally. GitHub Actions is not used. Add this repository URL to Obtainium using its GitHub source.
 
-GitHub Actions requires `AALL_KEYSTORE_BASE64`, containing the base64 encoded release keystore, and `AALL_STORE_PASSWORD`. The alias is `aall`; key and store passwords must match. Keep a private backup of the keystore and password outside the repository. Android version codes come from monotonically increasing workflow run numbers. Never recreate the signing key for an update.
+Set `AALL_KEYSTORE` to the persistent private keystore and `AALL_PASSWORD_FILE` to a private file containing its password, then run `pnpm release`. The script runs checks, builds the standalone APK, signs it, verifies its signature and alignment, and publishes it to GitHub Releases. Bump `package.json` and `app.config.ts` versions before each new release. Version codes default to Unix seconds, increasing across releases. Do not release twice with the same tag.
+
+The signing key is stored locally at `/home/danields/.local/share/aall/signing/aall.jks`. Keep a private backup of it and its password. Never recreate the signing key for an update. Passwords and signing keys stay outside the repository.
 
 ## Validation
 
