@@ -98,11 +98,15 @@ function AppContent() {
           })),
         }),
       );
+      native.reconcile();
       refresh();
       setApps(installed);
     }
     const timer = setInterval(refresh, 1000);
-    const sub = AppState.addEventListener("change", refresh);
+    const sub = AppState.addEventListener("change", (appState) => {
+      if (appState === "active") native?.reconcile();
+      refresh();
+    });
     return () => {
       clearInterval(timer);
       sub.remove();

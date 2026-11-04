@@ -3,6 +3,7 @@ import type { Config, InstalledApp, Snapshot, Routine } from "./model";
 type Native = {
   initialize(config: string): void;
   getSnapshot(): string;
+  reconcile(): void;
   setConfig(config: string): void;
   installedApps(): InstalledApp[];
   startFocus(): void;

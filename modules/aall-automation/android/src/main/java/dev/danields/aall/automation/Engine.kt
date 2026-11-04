@@ -60,7 +60,9 @@ class Engine(private val context: Context) {
   }
   fun charging() { val state = store.load(); store.save(state,Reconcile.startBedtimeEarly(state,clock())) }
 
-  fun reconcile(): JSONObject {
+  fun snapshot() = snapshot(Reconcile.decide(store.load(),environment()))
+
+  fun reconcile() {
     val before = store.load()
     val decision = Reconcile.decide(before,environment())
     store.save(before,decision.state)
@@ -73,7 +75,7 @@ class Engine(private val context: Context) {
     }
     AallAccessibilityService.instance?.update(decision)
     scheduleAlarm(decision.nextChange)
-    return snapshot(decision,failures)
+    put("effectFailures",JSONArray(failures).toString())
   }
 
   private fun environment(): Environment {
@@ -112,8 +114,9 @@ class Engine(private val context: Context) {
     val pending=PendingIntent.getBroadcast(context,0,Intent(context,AutomationReceiver::class.java),PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     if(alarm.canScheduleExactAlarms()) alarm.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,next,pending) else alarm.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,next,pending)
   }
-  private fun snapshot(d: Decision, failures: List<String>): JSONObject {
+  private fun snapshot(d: Decision): JSONObject {
     val now=System.currentTimeMillis(); val p=permissions()
+    val failures=JSONArray(prefs.getString("effectFailures","[]")).let{a->(0 until a.length()).map(a::getString)}
     return JSONObject()
       .put("config",d.state.config.toJson())
       .put("active",JSONArray(d.routines.map{it.kind.id}))
