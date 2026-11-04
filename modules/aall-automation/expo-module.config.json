@@ -1,0 +1,4 @@
+{
+  "platforms": ["android"],
+  "android": { "modules": ["dev.danields.aall.automation.AallAutomationModule"] }
+}
