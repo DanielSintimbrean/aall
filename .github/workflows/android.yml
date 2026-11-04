@@ -15,7 +15,7 @@ jobs:
       - uses: jdx/mise-action@v3
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck && pnpm check && pnpm test --run
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - run: sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0' 'ndk;27.1.12297006'
       - run: pnpm build:apk
         env:
@@ -35,7 +35,7 @@ jobs:
         with:
           name: aall-apk
           path: artifacts
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
       - run: sdkmanager 'build-tools;37.0.0'
       - name: Sign APK with persistent release key
         env:
