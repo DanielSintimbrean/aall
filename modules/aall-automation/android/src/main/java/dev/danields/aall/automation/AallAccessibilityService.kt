@@ -41,7 +41,7 @@ class AallAccessibilityService : AccessibilityService() {
     if(!engine.blocked(foreground,evaluation)) { overlay?.let{wm.removeView(it)}; overlay=null; return }
     if(overlay!=null) return
     val layout=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER; setPadding(48,48,48,48); setBackgroundColor(Color.rgb(8,11,11)) }
-    layout.addView(TextView(this).apply { text="aall\nThis app is paused\n${evaluation.routines.joinToString { it.getString("title") }}"; textSize=24f; setTextColor(Color.WHITE); gravity=Gravity.CENTER })
+    layout.addView(TextView(this).apply { text="aall\nThis app is paused\n${evaluation.routines.joinToString { it.title }}"; textSize=24f; setTextColor(Color.WHITE); gravity=Gravity.CENTER })
     layout.addView(Button(this).apply { text="Open aall"; setOnClickListener{this@AallAccessibilityService.foreground=packageName; engine.reconcile(); startActivity(packageManager.getLaunchIntentForPackage(packageName)!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))} })
     layout.addView(Button(this).apply { text="Home"; setOnClickListener{performGlobalAction(GLOBAL_ACTION_HOME)} })
     overlay=layout
