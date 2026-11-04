@@ -191,7 +191,8 @@ function AppContent() {
                     {!r.enabled
                       ? "Disabled"
                       : !state.permissions.alarms ||
-                          (r.id !== "grayscale" && !state.permissions.accessibility) ||
+                          ((r.id !== "grayscale" || r.colorApps.length > 0) &&
+                            !state.permissions.accessibility) ||
                           (r.id !== "access" && !state.permissions.grayscale) ||
                           (["focus", "bedtime"].includes(r.id) && !state.permissions.dnd)
                         ? "Needs setup"

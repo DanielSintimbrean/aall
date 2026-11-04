@@ -29,6 +29,11 @@ class RulesTest {
     val utc=Rules.overrideExpiry(routine(),day,ZoneId.of("UTC"))
     assertEquals(3600000L,utc-madrid)
   }
+  @Test fun colorExceptionDoesNotReleaseAnotherOwnersGrayscale() {
+    assertFalse(Rules.grayRequest("grayscale",true))
+    assertTrue(listOf(Rules.grayRequest("grayscale",true),Rules.grayRequest("focus",false)).any{it})
+    assertFalse(Rules.grayRequest("access",false))
+  }
   @Test fun overnightBelongsToStartingWeekday() {
     assertTrue(Rules.active(routine(),time("2026-11-03T06:59:00+01:00[Europe/Madrid]"),zone))
     assertFalse(Rules.active(routine(),time("2026-11-03T07:00:00+01:00[Europe/Madrid]"),zone))

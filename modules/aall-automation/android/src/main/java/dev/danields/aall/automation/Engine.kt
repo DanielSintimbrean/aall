@@ -110,7 +110,7 @@ class Engine(private val context: Context) {
     val dnd=e.routines.any{it.getString("id") in listOf("bedtime","focus")}
     try { if(permissions.getBoolean("dnd") && (dnd != prefs.getBoolean("dndOwned",false))) { notification.setInterruptionFilter(if(dnd) NotificationManager.INTERRUPTION_FILTER_PRIORITY else NotificationManager.INTERRUPTION_FILTER_ALL); prefs.edit().putBoolean("dndOwned",dnd).commit() } } catch(ex: Exception) { errors.put("DND: ${ex.message}") }
     val pkg=AallAccessibilityService.instance?.foreground ?: ""
-    val gray=e.routines.any{it.getString("id")!="access"} && e.routines.none{contains(it,"colorApps",pkg)}
+    val gray=e.routines.any{Rules.grayRequest(it.getString("id"),contains(it,"colorApps",pkg))}
     try { if(permissions.getBoolean("grayscale")) grayscale((gray || remaining("grayTest")>0) && !e.dayOff && !e.paused) } catch(ex: Exception) { errors.put("Grayscale: ${ex.message}") }
     AallAccessibilityService.instance?.update(this,e)
     val next=nextChange(now)
@@ -119,6 +119,7 @@ class Engine(private val context: Context) {
     val names=e.routines.map{it.getString("id")}
     if(names.any{it!="grayscale"} && !permissions.getBoolean("accessibility")) errors.put("App blocking needs accessibility access.")
     if(dnd && !permissions.getBoolean("dnd")) errors.put("DND access missing.")
+    if(gray && e.routines.any{it.getJSONArray("colorApps").length()>0} && !permissions.getBoolean("accessibility")) errors.put("Color exceptions need accessibility access.")
     if(gray && !permissions.getBoolean("grayscale")) errors.put("Grayscale needs the ADB grant.")
     if(!permissions.getBoolean("alarms")) errors.put("Exact alarm access missing; changes may be delayed.")
     return JSONObject().put("config",config()).put("active",JSONArray(names)).put("dayOff",e.dayOff).put("daysOff",JSONArray(daysOff())).put("focusUntil",now+remaining("focus")).put("pauseUntil",now+remaining("pause")).put("nextChange",next).put("permissions",permissions).put("errors",errors)

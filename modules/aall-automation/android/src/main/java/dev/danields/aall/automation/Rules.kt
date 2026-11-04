@@ -13,6 +13,7 @@ object Rules {
     "bedtime" -> scheduled || earlyUntil > now
     else -> scheduled
   }
+  fun grayRequest(id: String, exempt: Boolean) = id != "access" && !exempt
   fun suppress(dayOff: Boolean, pauseRemaining: Long) = dayOff || pauseRemaining > 0
 
   fun overrideExpiry(r: JSONObject, date: LocalDate, zone: ZoneId): Long {
