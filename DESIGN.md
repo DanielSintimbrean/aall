@@ -18,6 +18,7 @@ It also includes scheduled days off without restrictions. A day off must be book
 - A bypass presents an arithmetic expression with three integers in the inclusive range 50 to 999 and addition and subtraction. The final result must be in the inclusive range -999 to 999.
 - A correct answer pauses restrictions for 15 minutes. Current routines resume afterward. Wrong answers retry the same expression.
 - Scheduled bedtime starts without requiring charging. Charging during an earlier evening window can start bedtime early. Unplugging does not cancel it. The configured wake-up time ends bedtime.
+- A single silent status notification shows what Today's heading shows: running routines, pause or day off, with a countdown for focus and pause. It goes away when nothing is in effect, and a swiped-away notice stays gone until the status changes. It must stay visible during aall's own DND.
 - Today is the home screen: active routines and their reasons, next change, Start Focus, and shortcuts for times, days, and app lists.
 - One-time ADB setup for grayscale is acceptable, subject to proving it works on the actual phone.
 - Public GitHub repository, locally built and signed APKs, GitHub Releases, and Obtainium updates. Personal adjustments stay on-device.

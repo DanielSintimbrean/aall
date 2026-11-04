@@ -20,7 +20,7 @@ The `pnpm build:apk` output uses the generated Expo development signing certific
 
 ## Phone setup
 
-Grant accessibility, DND and exact alarm access from Phone setup. A sideloaded app may need **Allow restricted settings** in Android app info before enabling accessibility.
+Grant accessibility, DND, exact alarm and notification access from Phone setup. A sideloaded app may need **Allow restricted settings** in Android app info before enabling accessibility.
 
 Grayscale requires this one-time grant:
 
@@ -31,6 +31,8 @@ adb shell pm grant dev.danields.aall android.permission.WRITE_SECURE_SETTINGS
 The setup screen has a ten-second grayscale test and manual restoration. Permission and secure-setting readback alone do not prove that GrapheneOS displays grayscale. Verify on the physical phone. Android Settings, phone calls, the launcher and aall remain accessible. This provides personal friction, not tamper-proof enforcement.
 
 Schedules use local wall time and the starting weekday. Focus and bypass use elapsed time during a boot and recover their remaining wall-clock deadline on reboot. Native alarms, boot/time broadcasts and accessibility events reconcile state without React running. The app reconciles after each action and when it returns to the foreground, and its one-second snapshot poll only reads. Android force-stop suspends an app until the next launch. Day-off midnight boundaries release aall's restrictions without releasing another app's DND rule.
+
+The status notification comes from the native reconcile, so it also updates when React isn't running. Its channel bypasses DND, which Android only allows once aall has DND access. Without the bypass, aall's own DND rule hides it.
 
 ## Releases
 

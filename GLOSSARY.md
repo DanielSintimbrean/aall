@@ -9,4 +9,5 @@
 - **Pause**: 15 minutes without restrictions, earned by solving the arithmetic challenge.
 - **Decision**: what `Reconcile.decide` returns for a state and environment: running routines, next state, wanted effects, next change, errors and statuses.
 - **Reconcile**: load state, get a decision, then save it and apply its effects to Android. `Engine` does this.
+- **Status notice**: what the status notification says for a decision. `StatusNotice.of` works it out, and `StatusNotifier` posts it during reconcile.
 - **Snapshot**: the read-only view the UI polls. Reading it never changes phone state.

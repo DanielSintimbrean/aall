@@ -6,6 +6,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -309,5 +310,92 @@ class ReconcileTest {
     val now = clock("2026-11-02T12:00:00")
     val ending = State().copy(timers = mapOf(Timer.PAUSE to Timer.start(now, 50)))
     assertEquals(now.wall + 50, decide(ending, now).nextChange)
+  }
+
+  private val grayscaleDaytime =
+    routine(RoutineKind.GRAYSCALE, listOf(Window(time(9), time(18), allDays)))
+
+  private fun notice(
+    state: State,
+    clock: Clock,
+    failures: List<String> = emptyList(),
+    permissions: Permissions = allow
+  ) = StatusNotice.of(decide(state, clock, permissions = permissions), clock, failures)
+
+  @Test fun noNoticeWhenNothingIsInEffect() {
+    assertNull(notice(state(grayscaleDaytime), clock("2026-11-02T20:00:00")))
+    assertNull(
+      notice(
+        State().copy(
+          timers = mapOf(Timer.GRAY_TEST to Timer.start(clock("2026-11-02T12:00:00"), 10000))
+        ),
+        clock("2026-11-02T12:00:00")
+      )
+    )
+  }
+
+  @Test fun noticeNamesRunningRoutinesAndNextChange() {
+    assertEquals(
+      StatusNotice("grayscale", "Next change at 18:00"),
+      notice(state(grayscaleDaytime), clock("2026-11-02T12:00:00"))
+    )
+  }
+
+  @Test fun noticeLeavesOutMidnightBecauseItChangesNoRoutine() {
+    assertEquals(StatusNotice("bedtime", ""), notice(state(bedtime), clock("2026-11-02T23:00:00")))
+  }
+
+  @Test fun focusComesFirstWithItsCountdown() {
+    val now = clock("2026-11-02T12:00:00")
+    val running =
+      state(grayscaleDaytime, routine(RoutineKind.FOCUS)) {
+        copy(timers = mapOf(Timer.FOCUS to Timer.start(now, 3000000)))
+      }
+    val n = notice(running, now)!!
+    assertEquals("focus, grayscale", n.title)
+    assertEquals(now.wall + 3000000, n.countdownTo)
+  }
+
+  @Test fun focusTimerOnADisabledRoutineShowsNoCountdown() {
+    val now = clock("2026-11-02T12:00:00")
+    val disabled =
+      state(grayscaleDaytime, routine(RoutineKind.FOCUS, enabled = false)) {
+        copy(timers = mapOf(Timer.FOCUS to Timer.start(now, 3000000)))
+      }
+    val n = notice(disabled, now)!!
+    assertEquals("grayscale", n.title)
+    assertNull(n.countdownTo)
+  }
+
+  @Test fun pauseOutranksFocusAndDayOffOutranksPause() {
+    val now = clock("2026-11-02T12:00:00")
+    val timers = mapOf(
+      Timer.FOCUS to Timer.start(now, 3000000),
+      Timer.PAUSE to Timer.start(now, 900000)
+    )
+    val paused = notice(state(routine(RoutineKind.FOCUS)) { copy(timers = timers) }, now)!!
+    assertEquals("Paused", paused.title)
+    assertEquals(now.wall + 900000, paused.countdownTo)
+    val off = notice(
+      state(routine(RoutineKind.FOCUS)) {
+        copy(timers = timers, daysOff = listOf("2026-11-02"))
+      },
+      now
+    )!!
+    assertEquals(StatusNotice("Day off", "All restrictions are off until midnight."), off)
+  }
+
+  @Test fun noticeDoesNotClaimProtectionWhenARoutineCannotRun() {
+    val now = clock("2026-11-02T23:00:00")
+    val missing = notice(state(bedtime), now, permissions = allow.copy(dnd = false))!!
+    assertEquals(StatusNotice("bedtime · needs setup", "DND access missing."), missing)
+    val failed = notice(state(bedtime), now, failures = listOf("DND: refused"))!!
+    assertEquals(StatusNotice("bedtime · needs setup", "DND: refused"), failed)
+  }
+
+  @Test fun noticeKeyIgnoresDeadlineJitterButNotAMovedDeadline() {
+    val notice = StatusNotice("focus", "", 1_000_000)
+    assertEquals(notice.key, notice.copy(countdownTo = 1_000_005).key)
+    assertNotEquals(notice.key, notice.copy(countdownTo = 1_060_000).key)
   }
 }

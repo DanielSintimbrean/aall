@@ -7,7 +7,7 @@ import { Button, Card, Divider, Icon, Notice, Page, Row, Section, type IconName 
 
 const adbCommand = "adb shell pm grant dev.danields.aall android.permission.WRITE_SECURE_SETTINGS";
 const permissions: {
-  kind: "accessibility" | "dnd" | "alarms" | "grayscale";
+  kind: "accessibility" | "dnd" | "alarms" | "notifications" | "grayscale";
   icon: IconName;
   title: string;
   why: string;
@@ -29,6 +29,12 @@ const permissions: {
     icon: "alarm",
     title: "Exact alarms",
     why: "Routines start and end on time.",
+  },
+  {
+    kind: "notifications",
+    icon: "bell-outline",
+    title: "Notifications",
+    why: "Shows what is active and when it ends.",
   },
   {
     kind: "grayscale",
