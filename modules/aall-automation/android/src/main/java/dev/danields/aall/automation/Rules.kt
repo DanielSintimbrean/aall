@@ -7,13 +7,6 @@ object Rules {
   fun remaining(sameBoot: Boolean, elapsedDeadline: Long, elapsedNow: Long, wallDeadline: Long, wallNow: Long, duration: Long): Long =
     (if(sameBoot) elapsedDeadline-elapsedNow else wallDeadline-wallNow).coerceIn(0,duration)
   fun verifies(answer: String, expected: Int) = answer.trim().toIntOrNull() == expected
-  fun requests(kind: RoutineKind, scheduled: Boolean, focusRemaining: Long, earlyUntil: Long, now: Long): Boolean = when(kind) {
-    RoutineKind.FOCUS -> focusRemaining > 0
-    RoutineKind.ACCESS -> !scheduled
-    RoutineKind.BEDTIME -> scheduled || earlyUntil > now
-    RoutineKind.GRAYSCALE -> scheduled
-  }
-  fun grayRequest(kind: RoutineKind, exempt: Boolean) = kind != RoutineKind.ACCESS && !exempt
   fun suppress(dayOff: Boolean, pauseRemaining: Long) = dayOff || pauseRemaining > 0
 
   fun overrideExpiry(r: Routine, date: LocalDate, zone: ZoneId): Long =

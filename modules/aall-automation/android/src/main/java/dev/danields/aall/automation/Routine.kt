@@ -4,8 +4,21 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalTime
 
-enum class RoutineKind(val id: String) {
-  ACCESS("access"), FOCUS("focus"), BEDTIME("bedtime"), GRAYSCALE("grayscale");
+enum class AppRule { NONE, BLOCK_LISTED, ALLOW_LISTED }
+
+enum class RoutineStatus(val id: String) { DISABLED("disabled"), NEEDS_SETUP("needsSetup"), ACTIVE("active"), READY("ready") }
+
+enum class RoutineKind(val id: String, val appRule: AppRule, val usesDnd: Boolean, val usesGrayscale: Boolean) {
+  ACCESS("access", AppRule.BLOCK_LISTED, usesDnd = false, usesGrayscale = false),
+  FOCUS("focus", AppRule.BLOCK_LISTED, usesDnd = true, usesGrayscale = true),
+  BEDTIME("bedtime", AppRule.ALLOW_LISTED, usesDnd = true, usesGrayscale = true),
+  GRAYSCALE("grayscale", AppRule.NONE, usesDnd = false, usesGrayscale = true);
+  fun runs(scheduled: Boolean, focusRemaining: Long, earlyUntil: Long, now: Long) = when(this) {
+    FOCUS -> focusRemaining > 0
+    ACCESS -> !scheduled
+    BEDTIME -> scheduled || earlyUntil > now
+    GRAYSCALE -> scheduled
+  }
   companion object {
     fun fromId(id: String) = requireNotNull(entries.firstOrNull { it.id == id }) { "Unknown routine $id" }
   }
@@ -32,6 +45,20 @@ data class Routine(
   val colorApps: List<String>,
   val earlyStart: LocalTime,
 ) {
+  fun blocks(pkg: String) = when(kind.appRule) {
+    AppRule.NONE -> false
+    AppRule.BLOCK_LISTED -> pkg in apps
+    AppRule.ALLOW_LISTED -> pkg !in apps
+  }
+  fun requestsGrayscale(foreground: String) = kind.usesGrayscale && foreground !in colorApps
+  fun needsAccessibility() = kind.appRule != AppRule.NONE || colorApps.isNotEmpty()
+  fun needsSetup(p: Permissions) = !p.alarms || (needsAccessibility() && !p.accessibility) || (kind.usesGrayscale && !p.grayscale) || (kind.usesDnd && !p.dnd)
+  fun status(p: Permissions, running: Boolean) = when {
+    !enabled -> RoutineStatus.DISABLED
+    needsSetup(p) -> RoutineStatus.NEEDS_SETUP
+    running -> RoutineStatus.ACTIVE
+    else -> RoutineStatus.READY
+  }
   fun toJson() = JSONObject()
     .put("id", kind.id).put("title", title).put("enabled", enabled)
     .put("windows", JSONArray(windows.map { it.toJson() }))

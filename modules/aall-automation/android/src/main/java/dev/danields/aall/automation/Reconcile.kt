@@ -51,6 +51,7 @@ data class Decision(
   val blocked: Boolean,
   val nextChange: Long,
   val errors: List<String>,
+  val statuses: Map<RoutineKind, RoutineStatus>,
 )
 
 object Reconcile {
@@ -64,15 +65,14 @@ object Reconcile {
     val dayOff = clock.today.toString() in state.daysOff
     val running = state.config.routines.mapNotNull { base ->
       val (r, anchor) = effective(state, base)
-      r.takeIf { it.enabled && Rules.requests(r.kind, Rules.active(r, now, clock.zone, anchor), focusRemaining, state.bedtimeUntil, now) }
+      r.takeIf { it.enabled && r.kind.runs(Rules.active(r, now, clock.zone, anchor), focusRemaining, state.bedtimeUntil, now) }
     }
     val routines = if (Rules.suppress(dayOff, pauseRemaining)) emptyList() else running
-    val dnd = routines.any { it.kind == RoutineKind.BEDTIME || it.kind == RoutineKind.FOCUS }
-    val gray = routines.any { Rules.grayRequest(it.kind, env.foreground in it.colorApps) }
+    val dnd = routines.any { it.kind.usesDnd }
+    val gray = routines.any { it.requestsGrayscale(env.foreground) }
     val grayscale = (gray || remaining(state, Timer.GRAY_TEST, clock) > 0) && !dayOff && pauseRemaining <= 0
-    val blocked = env.foreground !in env.alwaysAllowed && routines.any {
-      if (it.kind == RoutineKind.BEDTIME) env.foreground !in it.apps else it.kind != RoutineKind.GRAYSCALE && env.foreground in it.apps
-    }
+    val blocked = env.foreground !in env.alwaysAllowed && routines.any { it.blocks(env.foreground) }
+    val runningKinds = routines.map { it.kind }
     return Decision(
       state, routines, dayOff, focusRemaining, pauseRemaining,
       setDnd = dnd.takeIf { env.permissions.dnd && it != state.dndOwned },
@@ -80,6 +80,7 @@ object Reconcile {
       blocked = blocked,
       nextChange = nextChange(state, clock),
       errors = errors(routines, dnd, gray, env.permissions),
+      statuses = state.config.routines.associate { it.kind to it.status(env.permissions, it.kind in runningKinds) },
     )
   }
 
@@ -120,7 +121,7 @@ object Reconcile {
   }
 
   private fun errors(routines: List<Routine>, dnd: Boolean, gray: Boolean, p: Permissions) = buildList {
-    if (routines.any { it.kind != RoutineKind.GRAYSCALE } && !p.accessibility) add("App blocking needs accessibility access.")
+    if (routines.any { it.kind.appRule != AppRule.NONE } && !p.accessibility) add("App blocking needs accessibility access.")
     if (dnd && !p.dnd) add("DND access missing.")
     if (gray && routines.any { it.colorApps.isNotEmpty() } && !p.accessibility) add("Color exceptions need accessibility access.")
     if (gray && !p.grayscale) add("Grayscale needs the ADB grant.")

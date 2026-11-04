@@ -137,4 +137,19 @@ class ReconcileTest {
     assertEquals(now.wall + 60000, decide(timed, now).nextChange)
     assertEquals(at("2026-11-02T20:00:00"), decide(state(bedtime), now).nextChange)
   }
+  @Test fun statusReportsWhatEachKindRequires() {
+    val now = clock("2026-11-02T12:00:00")
+    fun status(routine: Routine, permissions: Permissions = allow) = decide(state(routine), now, permissions = permissions).statuses[routine.kind]
+    val access = routine(RoutineKind.ACCESS, apps = listOf("social"))
+    val grayscale = routine(RoutineKind.GRAYSCALE)
+    assertEquals(RoutineStatus.DISABLED, status(access.copy(enabled = false), Permissions(false, false, false, false)))
+    assertEquals(RoutineStatus.ACTIVE, status(access))
+    assertEquals(RoutineStatus.READY, status(grayscale))
+    assertEquals(RoutineStatus.NEEDS_SETUP, status(grayscale, allow.copy(alarms = false)))
+    assertEquals(RoutineStatus.NEEDS_SETUP, status(grayscale, allow.copy(grayscale = false)))
+    assertEquals(RoutineStatus.READY, status(grayscale, allow.copy(accessibility = false)))
+    assertEquals(RoutineStatus.NEEDS_SETUP, status(grayscale.copy(colorApps = listOf("maps")), allow.copy(accessibility = false)))
+    assertEquals(RoutineStatus.READY, status(access.copy(windows = listOf(Window(time(9), time(18), allDays))), allow.copy(dnd = false, grayscale = false)))
+    assertEquals(RoutineStatus.NEEDS_SETUP, status(bedtime, allow.copy(dnd = false)))
+  }
 }

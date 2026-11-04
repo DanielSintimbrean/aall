@@ -124,5 +124,6 @@ class Engine(private val context: Context) {
       .put("nextChange",d.nextChange)
       .put("permissions",JSONObject().put("accessibility",p.accessibility).put("dnd",p.dnd).put("alarms",p.alarms).put("grayscale",p.grayscale))
       .put("errors",JSONArray(failures+d.errors))
+      .put("statuses",JSONObject(d.statuses.entries.associate{it.key.id to it.value.id}))
   }
 }

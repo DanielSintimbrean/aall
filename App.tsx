@@ -20,6 +20,8 @@ import { StatusBar } from "expo-status-bar";
 import {
   defaults,
   earliestDay,
+  editors,
+  statusLabels,
   validTime,
   type InstalledApp,
   type Routine,
@@ -133,6 +135,7 @@ function AppContent() {
     setPage("edit");
   };
   const remaining = (until: number) => Math.max(0, Math.ceil((until - Date.now()) / 60000));
+  const editor = routine && editors[routine.id];
   return (
     <SafeAreaView className="flex-1 bg-zinc-950">
       <StatusBar style="light" />
@@ -177,25 +180,13 @@ function AppContent() {
               >
                 <View className="flex-row justify-between">
                   <Text className="text-white text-xl">{r.title}</Text>
-                  <Text className="text-teal-300">
-                    {!r.enabled
-                      ? "Disabled"
-                      : !state.permissions.alarms ||
-                          ((r.id !== "grayscale" || r.colorApps.length > 0) &&
-                            !state.permissions.accessibility) ||
-                          (r.id !== "access" && !state.permissions.grayscale) ||
-                          (["focus", "bedtime"].includes(r.id) && !state.permissions.dnd)
-                        ? "Needs setup"
-                        : state.active.includes(r.id)
-                          ? "Active"
-                          : "Ready"}
-                  </Text>
+                  <Text className="text-teal-300">{statusLabels[state.statuses[r.id]]}</Text>
                 </View>
                 <Text className="text-zinc-400 mt-2">
-                  {r.id === "focus"
+                  {editors[r.id].session
                     ? `${state.config.focusMinutes} minutes · ${remaining(state.focusUntil)} remaining`
                     : r.windows.map((w) => `${w.start}–${w.end}`).join(" · ")}
-                  {r.id === "access" ? " · allowed hours" : ""}
+                  {editors[r.id].cardNote}
                 </Text>
               </Pressable>
             ))}
@@ -214,7 +205,7 @@ function AppContent() {
             <Button title="Phone setup" onPress={() => setPage("setup")} />
           </>
         )}
-        {page === "edit" && routine && (
+        {page === "edit" && routine && editor && (
           <>
             <Text className="text-white text-3xl mb-4">{routine.title}</Text>
             <View className="flex-row justify-between items-center">
@@ -224,17 +215,8 @@ function AppContent() {
                 onValueChange={(enabled) => setRoutine({ ...routine, enabled })}
               />
             </View>
-            {routine.id === "access" && (
-              <Text className="text-zinc-400 mt-3">
-                Selected apps are blocked outside allowed hours.
-              </Text>
-            )}
-            {routine.id === "bedtime" && (
-              <Text className="text-zinc-400 mt-3">
-                Apps outside the allowed list are blocked. Charging can start bedtime early.
-              </Text>
-            )}
-            {routine.id === "focus" && (
+            {editor.hint && <Text className="text-zinc-400 mt-3">{editor.hint}</Text>}
+            {editor.session && (
               <>
                 <Field
                   label="Focus duration in minutes"
@@ -257,7 +239,7 @@ function AppContent() {
             {routine.windows.map((w, i) => (
               <View key={i} className="bg-zinc-900 p-4 rounded-xl my-3">
                 <Text className="text-teal-300">
-                  {routine.id === "access" ? "Allowed hours" : "Active hours"} {i + 1}
+                  {editor.windowLabel} {i + 1}
                 </Text>
                 {(["start", "end"] as const).map((key) => (
                   <Field
@@ -300,7 +282,7 @@ function AppContent() {
                     </Pressable>
                   ))}
                 </View>
-                {routine.id !== "bedtime" && (
+                {editor.windowCountEditable && (
                   <Button
                     title="Remove window"
                     onPress={() =>
@@ -310,7 +292,7 @@ function AppContent() {
                 )}
               </View>
             ))}
-            {!["focus", "bedtime"].includes(routine.id) && (
+            {editor.windowCountEditable && (
               <Button
                 title="Add hours"
                 onPress={() =>
@@ -324,16 +306,16 @@ function AppContent() {
                 }
               />
             )}
-            {routine.id === "bedtime" && (
+            {editor.chargingStart && (
               <Field
                 label="Charging may start bedtime after · HH:mm, at least 20:00"
                 value={routine.earlyStart}
                 onChangeText={(earlyStart) => setRoutine({ ...routine, earlyStart })}
               />
             )}
-            {routine.id !== "grayscale" && (
+            {editor.appList && (
               <Button
-                title={`${routine.id === "bedtime" ? "Allowed" : "Blocked"} apps · ${routine.apps.length}`}
+                title={`${editor.appList} apps · ${routine.apps.length}`}
                 onPress={() => {
                   setList("apps");
                   setQuery("");
@@ -341,7 +323,7 @@ function AppContent() {
                 }}
               />
             )}
-            {routine.id !== "access" && (
+            {editor.colorExceptions && (
               <Button
                 title={`Keep color in apps · ${routine.colorApps.length}`}
                 onPress={() => {
@@ -352,9 +334,7 @@ function AppContent() {
               />
             )}
             <Button title="Save weekly settings" onPress={() => save(false)} />
-            {routine.id !== "focus" && (
-              <Button title="Apply only today" onPress={() => save(true)} />
-            )}
+            {!editor.session && <Button title="Apply only today" onPress={() => save(true)} />}
           </>
         )}
         {page === "apps" && routine && (

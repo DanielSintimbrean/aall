@@ -1,6 +1,8 @@
 export type Window = { start: string; end: string; days: number[] };
+export type RoutineId = "access" | "bedtime" | "grayscale" | "focus";
+export type RoutineStatus = "disabled" | "needsSetup" | "active" | "ready";
 export type Routine = {
-  id: "access" | "bedtime" | "grayscale" | "focus";
+  id: RoutineId;
   title: string;
   enabled: boolean;
   windows: Window[];
@@ -20,6 +22,59 @@ export type Snapshot = {
   nextChange: number;
   permissions: { accessibility: boolean; dnd: boolean; alarms: boolean; grayscale: boolean };
   errors: string[];
+  statuses: Record<RoutineId, RoutineStatus>;
+};
+export const statusLabels: Record<RoutineStatus, string> = {
+  disabled: "Disabled",
+  needsSetup: "Needs setup",
+  active: "Active",
+  ready: "Ready",
+};
+type Editor = {
+  hint?: string;
+  windowLabel: string;
+  cardNote?: string;
+  windowCountEditable: boolean;
+  session: boolean;
+  chargingStart: boolean;
+  appList?: "Allowed" | "Blocked";
+  colorExceptions: boolean;
+};
+export const editors: Record<RoutineId, Editor> = {
+  access: {
+    hint: "Selected apps are blocked outside allowed hours.",
+    windowLabel: "Allowed hours",
+    cardNote: " · allowed hours",
+    windowCountEditable: true,
+    session: false,
+    chargingStart: false,
+    appList: "Blocked",
+    colorExceptions: false,
+  },
+  focus: {
+    windowLabel: "Active hours",
+    windowCountEditable: false,
+    session: true,
+    chargingStart: false,
+    appList: "Blocked",
+    colorExceptions: true,
+  },
+  bedtime: {
+    hint: "Apps outside the allowed list are blocked. Charging can start bedtime early.",
+    windowLabel: "Active hours",
+    windowCountEditable: false,
+    session: false,
+    chargingStart: true,
+    appList: "Allowed",
+    colorExceptions: true,
+  },
+  grayscale: {
+    windowLabel: "Active hours",
+    windowCountEditable: true,
+    session: false,
+    chargingStart: false,
+    colorExceptions: true,
+  },
 };
 const all = [1, 2, 3, 4, 5, 6, 7];
 const social = [

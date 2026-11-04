@@ -14,10 +14,10 @@ class RulesTest {
   }
   @Test fun bypassAndDayOffSuppressAllOwnersUntilExpiry() {
     assertTrue(Rules.suppress(true,0));assertTrue(Rules.suppress(false,1));assertFalse(Rules.suppress(false,0))
-    assertTrue(Rules.requests(RoutineKind.BEDTIME,true,0,0,100))
-    assertFalse(Rules.requests(RoutineKind.FOCUS,false,0,0,100))
-    assertTrue(Rules.requests(RoutineKind.BEDTIME,false,0,200,100))
-    assertFalse(Rules.requests(RoutineKind.BEDTIME,false,0,200,200))
+    assertTrue(RoutineKind.BEDTIME.runs(true,0,0,100))
+    assertFalse(RoutineKind.FOCUS.runs(false,0,0,100))
+    assertTrue(RoutineKind.BEDTIME.runs(false,0,200,100))
+    assertFalse(RoutineKind.BEDTIME.runs(false,0,200,200))
   }
   @Test fun wrongAnswersRetrySameExpectedValue() {
     assertFalse(Rules.verifies("123",456));assertFalse(Rules.verifies("456.0",456));assertTrue(Rules.verifies("456",456))
@@ -29,9 +29,10 @@ class RulesTest {
     assertEquals(3600000L,utc-madrid)
   }
   @Test fun colorExceptionDoesNotReleaseAnotherOwnersGrayscale() {
-    assertFalse(Rules.grayRequest(RoutineKind.GRAYSCALE,true))
-    assertTrue(listOf(Rules.grayRequest(RoutineKind.GRAYSCALE,true),Rules.grayRequest(RoutineKind.FOCUS,false)).any{it})
-    assertFalse(Rules.grayRequest(RoutineKind.ACCESS,false))
+    fun kind(kind: RoutineKind,colorApps: List<String>)=routine().copy(kind=kind,colorApps=colorApps)
+    assertFalse(kind(RoutineKind.GRAYSCALE,listOf("maps")).requestsGrayscale("maps"))
+    assertTrue(kind(RoutineKind.FOCUS,emptyList()).requestsGrayscale("maps"))
+    assertFalse(kind(RoutineKind.ACCESS,emptyList()).requestsGrayscale("maps"))
   }
   @Test fun overnightBelongsToStartingWeekday() {
     assertTrue(Rules.active(routine(),time("2026-11-03T06:59:00+01:00[Europe/Madrid]"),zone))
