@@ -159,6 +159,23 @@ class RulesTest {
     stored("bedtime", """[{"start":"22:30","end":"07:00","days":[1,3]}]""")
   )
 
+  @Test fun savedEnglishTitlesAreTranslatedWithoutChangingSettings() {
+    val titles = mapOf(
+      "access" to "Acceso a aplicaciones",
+      "focus" to "Concentración",
+      "bedtime" to "Descanso",
+      "grayscale" to "Escala de grises"
+    )
+    validRoutines.forEach { raw ->
+      val saved = org.json.JSONObject(raw).put("title", "Old English title")
+      val parsed = Routine.parse(saved).toJson()
+      assertEquals(titles[saved.getString("id")], parsed.getString("title"))
+      saved.keys().forEach { key ->
+        if (key != "title") assertEquals(saved.get(key).toString(), parsed.get(key).toString())
+      }
+    }
+  }
+
   @Test fun storedConfigSurvivesRoundTrip() {
     val parsed = Config.parse(config(validRoutines.joinToString(",")))
     assertEquals(parsed, Config.parse(parsed.toJson().toString()))

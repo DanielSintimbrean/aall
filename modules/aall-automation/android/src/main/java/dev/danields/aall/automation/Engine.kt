@@ -135,6 +135,7 @@ class Engine(private val context: Context) {
         applyDnd(wanted)
         store.save(decision.state, decision.state.copy(dndOwned = wanted))
       } catch (ex: Exception) {
+        android.util.Log.e("AallAutomation", "Failed to change DND", ex)
         failures.add("No se ha podido cambiar No molestar.")
       }
     }
@@ -142,6 +143,7 @@ class Engine(private val context: Context) {
       try {
         applyGrayscale(wanted)
       } catch (ex: Exception) {
+        android.util.Log.e("AallAutomation", "Failed to change grayscale", ex)
         failures.add("No se ha podido cambiar la escala de grises.")
       }
     }
@@ -150,6 +152,7 @@ class Engine(private val context: Context) {
     try {
       status.show(StatusNotice.of(decision, env.clock, failures))
     } catch (ex: Exception) {
+      android.util.Log.e("AallAutomation", "Failed to show status notification", ex)
       failures.add("No se ha podido mostrar la notificación.")
     }
     put("effectFailures", JSONArray(failures).toString())

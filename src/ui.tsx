@@ -337,7 +337,7 @@ function PickerField({
     <View className="flex-1 overflow-hidden rounded-2xl">
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}, ${value}. Change`}
+        accessibilityLabel={`${label}, ${value}. Cambiar`}
         android_ripple={ripple}
         onPress={onPress}
         className="min-h-[72px] justify-center rounded-2xl bg-raised px-4 py-2"
