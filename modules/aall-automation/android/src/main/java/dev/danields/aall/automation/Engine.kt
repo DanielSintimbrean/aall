@@ -168,6 +168,7 @@ class Engine(private val context: Context) {
     return Environment(
       clock = clock(),
       foreground = AallAccessibilityService.instance?.foreground ?: "",
+      foregroundApp = AallAccessibilityService.instance?.foregroundApp ?: "",
       alwaysAllowed = Rules.alwaysAllowed + listOfNotNull(context.packageName, launcher, dialer),
       plugged = plugged ?: ((battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0),
       permissions = permissions()
