@@ -1,6 +1,7 @@
 import React from "react";
 import { ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { apps } from "../apps";
 import {
   clockLabel,
   dateLabel,
@@ -149,6 +150,22 @@ export function Today({ navigation }: ScreenProps<"Today">) {
                 subtitle={routineDetail(routine, state, now)}
                 trailing={<StatusPill status={state.statuses[routine.id]} />}
                 onPress={() => open(routine)}
+              />
+            </View>
+          ))}
+        </Card>
+      </Section>
+
+      <Section title="Aplicaciones">
+        <Card>
+          {apps.map((app, index) => (
+            <View key={app.route}>
+              {index > 0 && <Divider />}
+              <Row
+                icon={app.icon}
+                title={app.title}
+                subtitle={app.subtitle}
+                onPress={() => navigation.navigate(app.route)}
               />
             </View>
           ))}

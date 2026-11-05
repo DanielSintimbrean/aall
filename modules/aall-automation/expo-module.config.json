@@ -1,4 +1,9 @@
 {
   "platforms": ["android"],
-  "android": { "modules": ["dev.danields.aall.automation.AallAutomationModule"] }
+  "android": {
+    "modules": [
+      "dev.danields.aall.automation.AallAutomationModule",
+      "dev.danields.aall.movent.MoventModule"
+    ]
+  }
 }

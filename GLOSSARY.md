@@ -12,3 +12,6 @@
 - **Reconcile**: load state, get a decision, then save it and apply its effects to Android. `Engine` does this.
 - **Status notice**: what the status notification says for a decision. `StatusNotice.of` works it out, and `StatusNotifier` posts it during reconcile.
 - **Snapshot**: the read-only view the UI polls. Reading it never changes phone state.
+- **App**: a small tool for one personal need, built into aall and listed under Aplicaciones on Today. `src/apps/index.ts` lists them.
+- **Movent**: the app that shows upcoming buses at Cascada de les Moles (stop 126) in a notification.
+- **Board**: the departures Movent shows for the next 2 hours. `Board` fetches and labels them, and `BoardNotice` turns them into the notification.
