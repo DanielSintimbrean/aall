@@ -1,4 +1,4 @@
-import { requireNativeModule } from "expo-modules-core";
+import { requireOptionalNativeModule } from "expo-modules-core";
 import { useFocusEffect } from "@react-navigation/native";
 import React, { useCallback, useState } from "react";
 import { Switch, Text, View } from "react-native";
@@ -21,7 +21,8 @@ type Native = {
   notificationsEnabled(): boolean;
 };
 
-const native = requireNativeModule<Native>("AallMovent");
+// Optional so importing this file does not break the install message in Expo Go.
+const native = requireOptionalNativeModule<Native>("AallMovent")!;
 const REFRESH_MS = 30_000;
 
 export function Movent() {

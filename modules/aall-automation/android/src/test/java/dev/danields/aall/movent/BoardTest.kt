@@ -61,6 +61,22 @@ class BoardTest {
     assertEquals(at(0, 30, day = 6), board.single().time)
   }
 
+  @Test fun clockTimesSurviveDaylightSavingChange() {
+    val raw = response(journey("131300")).replace("20261105", "20261025")
+    val before = ZonedDateTime.of(2026, 10, 25, 13, 0, 0, 0, Board.zone).toInstant().toEpochMilli()
+    val expected = ZonedDateTime.of(
+      2026,
+      10,
+      25,
+      13,
+      13,
+      0,
+      0,
+      Board.zone
+    ).toInstant().toEpochMilli()
+    assertEquals(expected, Board.parse(raw, before).single().time)
+  }
+
   @Test fun failedResponseThrows() {
     assertThrows(IllegalStateException::class.java) {
       Board.parse("""{"svcResL":[{"err":"H890"}]}""", now)

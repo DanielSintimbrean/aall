@@ -121,10 +121,9 @@ object Board {
   private fun millis(day: LocalDate, value: String): Long {
     val offset = if (value.length == 8) value.take(2).toLong() else 0
     val clock = value.takeLast(6)
-    return day.plusDays(offset).atStartOfDay(zone)
-      .plusHours(clock.take(2).toLong())
-      .plusMinutes(clock.substring(2, 4).toLong())
-      .plusSeconds(clock.substring(4).toLong())
+    return day.plusDays(offset)
+      .atTime(clock.take(2).toInt(), clock.substring(2, 4).toInt(), clock.substring(4).toInt())
+      .atZone(zone)
       .toInstant()
       .toEpochMilli()
   }

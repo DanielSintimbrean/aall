@@ -80,6 +80,8 @@ class MoventService : Service() {
     getSystemService(NotificationManager::class.java)
       .notify(ID, build(BoardNotice.of(departures, offline, System.currentTimeMillis())))
     if (getSystemService(PowerManager::class.java).isInteractive) {
+      // A wake during the fetch queued another tick, which would start a second polling loop.
+      handler.removeCallbacks(tick)
       handler.postDelayed(tick, REFRESH_MILLIS)
     }
   }
