@@ -68,7 +68,8 @@ data class Decision(
   val blocked: Boolean,
   val nextChange: Long,
   val errors: List<String>,
-  val statuses: Map<RoutineKind, RoutineStatus>
+  val statuses: Map<RoutineKind, RoutineStatus>,
+  val nightLight: NightLightRamp? = null
 )
 
 object Reconcile {
@@ -93,7 +94,8 @@ object Reconcile {
           )
       }
     }
-    val routines = if (Rules.suppress(dayOff, pauseRemaining)) emptyList() else running
+    val suppressed = Rules.suppress(dayOff, pauseRemaining)
+    val routines = running.filter { !suppressed || !it.kind.restriction }
     val dnd = routines.any { it.kind.usesDnd }
     val gray = routines.any { it.requestsGrayscale(env.foregroundApp) }
     val grayscale =
@@ -107,6 +109,10 @@ object Reconcile {
       blocked = blocked,
       nextChange = nextChange(state, clock),
       errors = errors(routines, dnd, gray, env.permissions),
+      nightLight = routines.firstOrNull { it.kind == RoutineKind.NIGHT_LIGHT }?.let { r ->
+        val since = Rules.activeSince(r, now, clock.zone, state.overrides[r.kind]?.date)
+        since?.let { NightLightRamp(it, r.rampMinutes, r.finalIntensity) }
+      },
       statuses = state.config.routines.associate { base ->
         base.kind to effective(state, base).first.status(env.permissions, base.kind in runningKinds)
       }
@@ -122,7 +128,7 @@ object Reconcile {
   }
 
   fun requireNoInstantTurnOff(state: State, routine: Routine) =
-    require(routine.enabled || !weeklyEnabled(state, routine.kind)) {
+    require(routine.enabled || !routine.kind.restriction || !weeklyEnabled(state, routine.kind)) {
       "Desactivar una rutina requiere 72 horas de antelación."
     }
 
@@ -200,7 +206,8 @@ object Reconcile {
       .mapValues { (_, o) -> o.copy(until = Rules.overrideExpiry(o.routine, o.date, clock.zone)) }
       // Older builds could save a disabled copy, which must not turn off a weekly routine.
       .filter { (kind, o) ->
-        clock.wall < o.until && (o.routine.enabled || !weeklyEnabled(state, kind))
+        clock.wall < o.until &&
+          (o.routine.enabled || !kind.restriction || !weeklyEnabled(state, kind))
       }
   )
 
@@ -223,6 +230,9 @@ object Reconcile {
         add("Las excepciones de color necesitan el permiso de accesibilidad.")
       }
       if (gray && !p.grayscale) add("La escala de grises necesita el permiso mediante ADB.")
+      if (routines.any { it.kind == RoutineKind.NIGHT_LIGHT } && !p.grayscale) {
+        add("La luz nocturna necesita el permiso mediante ADB.")
+      }
       if (!p.alarms) add("Falta el permiso de alarmas exactas; los cambios pueden retrasarse.")
     }
 

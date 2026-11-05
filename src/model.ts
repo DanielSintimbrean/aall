@@ -1,5 +1,5 @@
 export type Window = { start: string; end: string; days: number[] };
-export type RoutineId = "access" | "bedtime" | "grayscale" | "focus";
+export type RoutineId = "access" | "bedtime" | "grayscale" | "focus" | "nightLight";
 export type RoutineStatus = "disabled" | "needsSetup" | "active" | "ready";
 export type Routine = {
   id: RoutineId;
@@ -9,6 +9,8 @@ export type Routine = {
   apps: string[];
   colorApps: string[];
   earlyStart: string;
+  rampMinutes: number;
+  finalIntensity: number;
 };
 export type Config = { version: 1; focusMinutes: number; routines: Routine[] };
 export type InstalledApp = { packageName: string; label: string };
@@ -49,6 +51,12 @@ type Editor = {
   chargingStart: boolean;
   appList?: "allowed" | "blocked";
   colorExceptions: boolean;
+  ramp?: boolean;
+  noTurnOffNotice?: boolean;
+};
+export const rampLimits = {
+  rampMinutes: { min: 15, max: 240 },
+  finalIntensity: { min: 1, max: 100 },
 };
 export const editors: Record<RoutineId, Editor> = {
   access: {
@@ -90,6 +98,16 @@ export const editors: Record<RoutineId, Editor> = {
     chargingStart: false,
     colorExceptions: true,
   },
+  nightLight: {
+    hint: "El filtro cálido empieza al inicio del horario, aumenta poco a poco y se apaga al final.",
+    windowLabel: "Horario activo",
+    windowCountEditable: false,
+    session: false,
+    chargingStart: false,
+    colorExceptions: false,
+    ramp: true,
+    noTurnOffNotice: true,
+  },
 };
 const all = [1, 2, 3, 4, 5, 6, 7];
 const social = [
@@ -125,6 +143,8 @@ export const defaults: Config = {
       apps: social,
       colorApps: [],
       earlyStart: "20:00",
+      rampMinutes: 90,
+      finalIntensity: 50,
     },
     {
       id: "focus",
@@ -134,6 +154,8 @@ export const defaults: Config = {
       apps: social,
       colorApps,
       earlyStart: "20:00",
+      rampMinutes: 90,
+      finalIntensity: 50,
     },
     {
       id: "bedtime",
@@ -150,6 +172,8 @@ export const defaults: Config = {
       ],
       colorApps,
       earlyStart: "20:00",
+      rampMinutes: 90,
+      finalIntensity: 50,
     },
     {
       id: "grayscale",
@@ -163,6 +187,19 @@ export const defaults: Config = {
       apps: [],
       colorApps,
       earlyStart: "20:00",
+      rampMinutes: 90,
+      finalIntensity: 50,
+    },
+    {
+      id: "nightLight",
+      title: "Luz nocturna",
+      enabled: false,
+      windows: [{ start: "21:00", end: "07:00", days: all }],
+      apps: [],
+      colorApps: [],
+      earlyStart: "20:00",
+      rampMinutes: 90,
+      finalIntensity: 50,
     },
   ],
 };

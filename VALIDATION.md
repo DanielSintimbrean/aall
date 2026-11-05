@@ -6,8 +6,8 @@
 
 - Expo dependency compatibility check.
 - TypeScript strict typecheck, Vite+ formatting and lint, ktlint formatting and lint for Kotlin.
-- 25 shared TypeScript tests for defaults, input validation, screen labels and routine drafts.
-- 53 native JVM tests for the turn-off notice, overnight ownership, Only today, elapsed timers and reboot deadlines, overlapping requests, bypass suppression and expiry, retry verification, DST booking boundaries, the earliest bookable day off, timezone-aware temporary expiry, 10,000 generated arithmetic challenges, config parsing, charging-started bedtime, day-off transitions, DND ownership, blocking rules, routine status, next-change scheduling and status notices.
+- 27 shared TypeScript tests for defaults, input validation, screen labels and routine drafts.
+- 83 native JVM tests for Night Light ramps and restoration, Movent boards, the turn-off notice, overnight ownership, Only today, elapsed timers and reboot deadlines, overlapping requests, bypass suppression and expiry, retry verification, DST booking boundaries, the earliest bookable day off, timezone-aware temporary expiry, 10,000 generated arithmetic challenges, config parsing, charging-started bedtime, day-off transitions, DND ownership, blocking rules, routine status, next-change scheduling and status notices.
 - Metro production Android export.
 - Independent arm64 standalone release APK build, including native compilation and Android release lint.
 - APK signed with persistent release certificate, installed and launched through ADB without Metro.
@@ -63,6 +63,29 @@ Emulator `aall-test`, Android 17, on Grayscale during its active hours. A pass h
 - Keep on ended the notice. A real reboot kept the notice and its deadline.
 - With `boot_count` raised and the clock 4 days ahead, standing in for a reboot past the deadline, the routine showed Disabled and grayscale turned off. No real 72 hours passed, so the alarm firing at the deadline is covered only by the JVM test on `nextChange`.
 - Turning it back on with Save weekly applied at once.
+
+## Night Light checks
+
+2026-11-05, physical Pixel 8 Pro, GrapheneOS Android 17 (`CP3A.261005.005`), release-signed build installed over the existing app. Settings were preserved, and the new routine appeared disabled.
+
+Limits on this phone: `config_nightDisplayColorTemperatureMin` 686 K, `Max` 4082 K, `Default` 4000 K. AOSP's usual 2596 K minimum doesn't apply here, and 50% is 2384 K.
+
+Reading settings doesn't prove the filter changed, so these checks read `colorTransformMatrix` from `dumpsys SurfaceFlinger`:
+
+- Writing `night_display_color_temperature` updates the setting and `dumpsys color_display`, but the matrix doesn't move, even when turning the filter off and on. This contradicts what AOSP's observer suggests. At 2000 K and 3500 K, green and blue stayed at 0.695 and 0.403.
+- Writing `display_color_mode` recomputes the matrix from `adb shell`, but the app gets "You cannot change private secure settings". Toggling `accessibility_display_daltonizer_enabled` works from the app.
+- A 15-minute ramp from aall to 50% moved the matrix every minute with the app in the background. Green and blue went from 0.738 and 0.483 at 4082 K to 0.544 and 0.232 at 2837 K, on the steps logged. The user watched this one and saw a slight flash at each step without grayscale, which they accepted, and none with grayscale.
+- Screenshots don't show the filter or grayscale. Only the matrix and the user's eyes do.
+- With grayscale on, the matrix combines both, for example 0.213, 0.715, 0.072 scaled to 0.527 and 0.347 for green and blue. Solving the arithmetic pause released grayscale and left the ramp running.
+- Reinstalling or `am kill` during a window resumed at the temperature for that moment, without React in the foreground.
+- During a window the schedule read `night_display_auto_mode` 0, and Android's Night Light settings showed no schedule.
+- Writing a different temperature by hand during a window stopped the ramp from overwriting it. Ending the window then restored the activated state and schedule and left the hand-set temperature.
+- Ending a window early from the editor restored activated 0, 2327 K and schedule 1, exactly as they were, and the phone's own 19:50 schedule was still set.
+- The user tried different settings in the editor and in Android's Night Light screen and reported that it works.
+
+Two test tools change what aall reports. The `agent-device` snapshot helper keeps a UiAutomation running, which suspends every accessibility service until it's stopped. Force-stopping aall, including `open --relaunch`, removes its service from `enabled_accessibility_services`.
+
+Not tested on the phone: real Doze, a real reboot, an overnight ramp, and an alarm-driven window end. Elapsed-time logic for these is covered by JVM tests on the ramp, and the reboot case relies on the stored session and wall-clock timing.
 
 ## Charging events
 

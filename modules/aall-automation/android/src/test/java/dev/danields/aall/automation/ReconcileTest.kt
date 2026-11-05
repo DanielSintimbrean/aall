@@ -57,6 +57,57 @@ class ReconcileTest {
 
   private fun kinds(d: Decision) = d.routines.map { it.kind }
 
+  private val nightLight = routine(
+    RoutineKind.NIGHT_LIGHT,
+    listOf(Window(time(21), time(7), allDays))
+  )
+
+  @Test fun nightLightRampAnchorsToWhenItsWindowBegan() {
+    val d = decide(state(nightLight), clock("2026-11-04T23:30:00"))
+    assertEquals(NightLightRamp(at("2026-11-04T21:00:00"), 90, 50), d.nightLight)
+    val overnight = decide(state(nightLight), clock("2026-11-05T06:59:00"))
+    assertEquals(at("2026-11-04T21:00:00"), overnight.nightLight?.startedAt)
+    assertNull(decide(state(nightLight), clock("2026-11-05T07:00:00")).nightLight)
+    assertEquals(at("2026-11-05T07:00:00"), overnight.nextChange)
+  }
+
+  @Test fun pauseAndDayOffLeaveNightLightButReleaseRestrictions() {
+    val paused = decide(
+      state(nightLight, bedtime) {
+        copy(timers = mapOf(Timer.PAUSE to Timer.start(clock("2026-11-04T23:30:00"), 900000)))
+      },
+      clock("2026-11-04T23:30:00")
+    )
+    assertEquals(listOf(RoutineKind.NIGHT_LIGHT), kinds(paused))
+    assertFalse(paused.setGrayscale!!)
+    val dayOff = decide(
+      state(nightLight, bedtime) { copy(daysOff = listOf("2026-11-04")) },
+      clock("2026-11-04T23:30:00")
+    )
+    assertEquals(listOf(RoutineKind.NIGHT_LIGHT), kinds(dayOff))
+  }
+
+  @Test fun nightLightTurnsOffWithoutNoticeAndOnlyTodayCanDisableIt() {
+    val state = state(nightLight)
+    val off = nightLight.copy(enabled = false)
+    assertFalse(Reconcile.saveWeekly(state, off).config.routines[0].enabled)
+    val today = clock("2026-11-04T23:30:00")
+    val override = Override(off, today.today, at("2026-11-05T07:00:00"))
+    val d = decide(state.copy(overrides = mapOf(RoutineKind.NIGHT_LIGHT to override)), today)
+    assertNull(d.nightLight)
+    assertEquals(override.routine, d.state.overrides[RoutineKind.NIGHT_LIGHT]?.routine)
+  }
+
+  @Test fun nightLightNeedsTheSecureSettingsGrant() {
+    val d = decide(
+      state(nightLight),
+      clock("2026-11-04T23:30:00"),
+      permissions = allow.copy(grayscale = false)
+    )
+    assertEquals(RoutineStatus.NEEDS_SETUP, d.statuses[RoutineKind.NIGHT_LIGHT])
+    assertTrue(d.errors.any { it.contains("luz nocturna") })
+  }
+
   @Test fun chargingStartsBedtimeEarlyAndUnpluggingKeepsItUntilWake() {
     val started = decide(state(bedtime), clock("2026-11-02T21:00:00"), plugged = true)
     assertEquals(listOf(RoutineKind.BEDTIME), kinds(started))

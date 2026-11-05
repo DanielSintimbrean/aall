@@ -187,6 +187,15 @@ class RulesTest {
     )
   }
 
+  @Test fun configSavedBeforeNightLightGainsItDisabledAndKeepsItsRoutines() {
+    val parsed = Config.parse(config(validRoutines.joinToString(",")))
+    val added = parsed.routines.single { it.kind == RoutineKind.NIGHT_LIGHT }
+    assertEquals(false, added.enabled)
+    assertEquals(90, added.rampMinutes)
+    assertEquals(50, added.finalIntensity)
+    assertEquals(5, parsed.routines.size)
+  }
+
   @Test(expected = IllegalArgumentException::class)
   fun configNeedsEveryKind() {
     Config.parse(config(validRoutines.drop(1).joinToString(",")))

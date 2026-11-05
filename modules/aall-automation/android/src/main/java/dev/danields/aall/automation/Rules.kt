@@ -51,14 +51,20 @@ object Rules {
   fun runsOn(w: Window, date: LocalDate, anchor: LocalDate?) =
     anchor == date || date.dayOfWeek.value in w.days
 
-  fun active(r: Routine, now: Long, zone: ZoneId, anchor: LocalDate? = null): Boolean {
-    if (!r.enabled) return false
+  fun active(r: Routine, now: Long, zone: ZoneId, anchor: LocalDate? = null) =
+    activeSince(r, now, zone, anchor) != null
+
+  /** When the window running now began, or null when none is. */
+  fun activeSince(r: Routine, now: Long, zone: ZoneId, anchor: LocalDate? = null): Long? {
+    if (!r.enabled) return null
     val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
     val dates = if (anchor != null) listOf(anchor) else listOf(today.minusDays(1), today)
-    return r.windows.any { w ->
-      dates.any { d ->
+    return r.windows.firstNotNullOfOrNull { w ->
+      dates.firstNotNullOfOrNull { d ->
         val (start, end) = interval(w, d, zone)
-        (anchor != null || d.dayOfWeek.value in w.days) && now >= start && now < end
+        start.takeIf {
+          (anchor != null || d.dayOfWeek.value in w.days) && now >= start && now < end
+        }
       }
     }
   }

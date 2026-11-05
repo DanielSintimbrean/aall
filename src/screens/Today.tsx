@@ -35,6 +35,7 @@ const routineIcons: Record<Routine["id"], IconName> = {
   focus: "target",
   bedtime: "weather-night",
   grayscale: "palette-outline",
+  nightLight: "weather-sunset",
 };
 
 function hero(state: Snapshot, now: number) {
@@ -79,7 +80,8 @@ function routineDetail(routine: Routine, state: Snapshot, now: number) {
     return `${state.config.focusMinutes} min · ${routine.apps.length} aplicaciones bloqueadas${off}`;
   const hours = `${editor.cardPrefix ?? ""}${windowsLabel(routine.windows)}`;
   const days = routine.windows.length === 1 ? ` · ${daysLabel(routine.windows[0].days)}` : "";
-  return `${hours}${days}${state.overrides[routine.id] ? " · solo hoy" : ""}${off}`;
+  const ramp = editor.ramp ? ` · ${routine.rampMinutes} min hasta ${routine.finalIntensity} %` : "";
+  return `${hours}${days}${ramp}${state.overrides[routine.id] ? " · solo hoy" : ""}${off}`;
 }
 
 export function Today({ navigation }: ScreenProps<"Today">) {

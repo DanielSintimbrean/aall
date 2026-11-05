@@ -444,12 +444,16 @@ export function Stepper({
   onStep,
   label,
   error,
+  unit = "min",
+  stepName = "minutos",
 }: {
   value: string;
   onChange(value: string): void;
   onStep(by: number): void;
   label: string;
   error?: boolean;
+  unit?: string;
+  stepName?: string;
 }) {
   const button = (icon: IconName, name: string, by: number) => (
     <View className="overflow-hidden rounded-2xl">
@@ -466,7 +470,7 @@ export function Stepper({
   );
   return (
     <View className="flex-row items-center gap-2">
-      {button("minus", "5 minutos menos", -5)}
+      {button("minus", `5 ${stepName} menos`, -5)}
       <View
         className={`h-14 flex-1 flex-row items-center justify-center gap-1 rounded-2xl border-2 bg-raised ${error ? "border-danger" : "border-transparent"}`}
       >
@@ -480,9 +484,9 @@ export function Stepper({
           onChangeText={onChange}
           className="min-w-10 text-center text-xl font-semibold text-ink"
         />
-        <Text className="text-base text-muted">min</Text>
+        <Text className="text-base text-muted">{unit}</Text>
       </View>
-      {button("plus", "5 minutos más", 5)}
+      {button("plus", `5 ${stepName} más`, 5)}
     </View>
   );
 }

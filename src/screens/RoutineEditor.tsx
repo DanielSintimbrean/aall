@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { usePreventRemove } from "@react-navigation/native";
 import { Alert, Pressable, Switch, Text, ToastAndroid, View } from "react-native";
-import { checkDraft, focusMinutesToSave, isDirty, type DraftEdit } from "../draft";
+import {
+  checkDraft,
+  focusMinutesToSave,
+  isDirty,
+  rampFieldInvalid,
+  type DraftEdit,
+} from "../draft";
 import {
   clockLabel,
   earliestChargingStart,
   editors,
   isOvernight,
+  rampLimits,
   type InstalledApp,
   type Routine,
   type Window,
@@ -34,6 +41,8 @@ import {
 } from "../ui";
 
 const focusPresets = [25, 50, 90];
+const rampPresets = [30, 60, 90, 120];
+const intensityPresets = [25, 50, 75, 100];
 
 function appNames(packages: string[], apps: InstalledApp[]) {
   if (!packages.length) return "Ninguna";
@@ -118,7 +127,8 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
   const weeklyOn = state.config.routines.some((r) => r.id === routine.id && r.enabled);
   const turningOff = state.turningOff[routine.id];
   const setEnabled = (enabled: boolean) => {
-    if (enabled || !weeklyOn) return dispatch({ type: "setEnabled", enabled });
+    if (enabled || !weeklyOn || editor.noTurnOffNotice)
+      return dispatch({ type: "setEnabled", enabled });
     Alert.alert(
       `¿Desactivar ${routine.title}?`,
       "La rutina seguirá su horario durante 72 horas y después se desactivará. Puedes cancelar la solicitud hasta entonces. El plazo empieza ahora y no guarda los demás cambios de esta pantalla.",
@@ -239,6 +249,80 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
           </Section>
         )}
 
+        {editor.ramp && (
+          <>
+            <Section title="Duración de la transición">
+              <Card className="gap-3 p-4">
+                <View accessibilityRole="radiogroup" className="flex-row gap-2">
+                  {rampPresets.map((preset) => (
+                    <Chip
+                      key={preset}
+                      label={`${preset} min`}
+                      selected={routine.rampMinutes === preset}
+                      onPress={() =>
+                        dispatch({ type: "setRamp", field: "rampMinutes", value: String(preset) })
+                      }
+                    />
+                  ))}
+                </View>
+                <Stepper
+                  label="Duración de la transición en minutos"
+                  value={String(routine.rampMinutes)}
+                  error={rampFieldInvalid(routine, "rampMinutes")}
+                  onChange={(value) => dispatch({ type: "setRamp", field: "rampMinutes", value })}
+                  onStep={(by) => dispatch({ type: "stepRamp", field: "rampMinutes", by })}
+                />
+                {rampFieldInvalid(routine, "rampMinutes") && (
+                  <FieldError>
+                    Elige entre {rampLimits.rampMinutes.min} y {rampLimits.rampMinutes.max} minutos.
+                  </FieldError>
+                )}
+              </Card>
+            </Section>
+            <Section title="Intensidad final">
+              <Card className="gap-3 p-4">
+                <View accessibilityRole="radiogroup" className="flex-row gap-2">
+                  {intensityPresets.map((preset) => (
+                    <Chip
+                      key={preset}
+                      label={`${preset} %`}
+                      selected={routine.finalIntensity === preset}
+                      onPress={() =>
+                        dispatch({
+                          type: "setRamp",
+                          field: "finalIntensity",
+                          value: String(preset),
+                        })
+                      }
+                    />
+                  ))}
+                </View>
+                <Stepper
+                  label="Intensidad final en porcentaje"
+                  unit="%"
+                  stepName="puntos"
+                  value={String(routine.finalIntensity)}
+                  error={rampFieldInvalid(routine, "finalIntensity")}
+                  onChange={(value) =>
+                    dispatch({ type: "setRamp", field: "finalIntensity", value })
+                  }
+                  onStep={(by) => dispatch({ type: "stepRamp", field: "finalIntensity", by })}
+                />
+                {rampFieldInvalid(routine, "finalIntensity") ? (
+                  <FieldError>
+                    Elige entre {rampLimits.finalIntensity.min} y {rampLimits.finalIntensity.max} %.
+                  </FieldError>
+                ) : (
+                  <Text className="px-1 text-sm text-muted">
+                    La misma escala que Luz nocturna en Android. Una pausa o un día libre no la
+                    apagan.
+                  </Text>
+                )}
+              </Card>
+            </Section>
+          </>
+        )}
+
         {editor.chargingStart && (
           <Section title="Inicio anticipado al cargar">
             <Card className="gap-3 p-4">
@@ -259,27 +343,29 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
           </Section>
         )}
 
-        <Section title="Aplicaciones">
-          <Card>
-            {editor.appList && (
-              <Row
-                icon={editor.appList === "allowed" ? "check-circle-outline" : "cancel"}
-                title={`Aplicaciones ${editor.appList === "allowed" ? "permitidas" : "bloqueadas"}`}
-                subtitle={appNames(routine.apps, apps)}
-                onPress={() => navigation.navigate("AppPicker", { list: "apps" })}
-              />
-            )}
-            {editor.appList && editor.colorExceptions && <Divider />}
-            {editor.colorExceptions && (
-              <Row
-                icon="palette-outline"
-                title="Conservar el color en"
-                subtitle={appNames(routine.colorApps, apps)}
-                onPress={() => navigation.navigate("AppPicker", { list: "colorApps" })}
-              />
-            )}
-          </Card>
-        </Section>
+        {(editor.appList || editor.colorExceptions) && (
+          <Section title="Aplicaciones">
+            <Card>
+              {editor.appList && (
+                <Row
+                  icon={editor.appList === "allowed" ? "check-circle-outline" : "cancel"}
+                  title={`Aplicaciones ${editor.appList === "allowed" ? "permitidas" : "bloqueadas"}`}
+                  subtitle={appNames(routine.apps, apps)}
+                  onPress={() => navigation.navigate("AppPicker", { list: "apps" })}
+                />
+              )}
+              {editor.appList && editor.colorExceptions && <Divider />}
+              {editor.colorExceptions && (
+                <Row
+                  icon="palette-outline"
+                  title="Conservar el color en"
+                  subtitle={appNames(routine.colorApps, apps)}
+                  onPress={() => navigation.navigate("AppPicker", { list: "colorApps" })}
+                />
+              )}
+            </Card>
+          </Section>
+        )}
       </Page>
       <BottomBar>
         <View className="flex-row gap-2">
