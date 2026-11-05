@@ -4,6 +4,8 @@ import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.view.Gravity
 import android.view.WindowManager
@@ -42,7 +44,8 @@ class AallAccessibilityService : AccessibilityService() {
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
     if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
     val pkg = event.packageName?.toString() ?: return
-    if (getSystemService(InputMethodManager::class.java).enabledInputMethodList.any {
+    if (event.className == "android.inputmethodservice.SoftInputWindow" &&
+      getSystemService(InputMethodManager::class.java).enabledInputMethodList.any {
         it.packageName == pkg
       }
     ) {
@@ -51,10 +54,16 @@ class AallAccessibilityService : AccessibilityService() {
     if (pkg == packageName && overlay != null) return
     // System UI and Recents leave the underlying app in front for color exceptions.
     val systemUi = pkg == "com.android.systemui" ||
-      event.className == "com.android.quickstep.RecentsActivity"
+      (event.className == "com.android.quickstep.RecentsActivity" && isSystemApp(pkg))
     if (!systemUi) foregroundApp = pkg
     foreground = if (systemUi) "com.android.systemui" else pkg
     Engine(this).reconcile()
+  }
+
+  private fun isSystemApp(pkg: String) = try {
+    packageManager.getApplicationInfo(pkg, 0).flags and ApplicationInfo.FLAG_SYSTEM != 0
+  } catch (_: PackageManager.NameNotFoundException) {
+    false
   }
 
   fun update(decision: Decision) {
