@@ -3,6 +3,7 @@ import { usePreventRemove } from "@react-navigation/native";
 import { Alert, Pressable, Switch, Text, ToastAndroid, View } from "react-native";
 import { checkDraft, focusMinutesToSave, isDirty, type DraftEdit } from "../draft";
 import {
+  clockLabel,
   earliestChargingStart,
   editors,
   isOvernight,
@@ -11,7 +12,7 @@ import {
   type Window,
 } from "../model";
 import type { ScreenProps } from "../navigation";
-import { saveConfig, saveToday, saveWeekly } from "../native";
+import { native, saveToday, saveWeekly } from "../native";
 import { useDraft, useStore } from "../store";
 import { colors } from "../theme";
 import {
@@ -114,6 +115,23 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
   const { routine, minutes } = draft;
   const editor = editors[routine.id];
   const overridden = !!state.overrides[routine.id];
+  const weeklyOn = state.config.routines.some((r) => r.id === routine.id && r.enabled);
+  const turningOff = state.turningOff[routine.id];
+  const setEnabled = (enabled: boolean) => {
+    if (enabled || !weeklyOn) return dispatch({ type: "setEnabled", enabled });
+    Alert.alert(
+      `Turn off ${routine.title}?`,
+      "It keeps following its schedule for 72 hours, then turns off. You can cancel until then. This starts now and doesn't save other changes here.",
+      [
+        { text: "Keep on", style: "cancel" },
+        {
+          text: "Start 72 hours",
+          style: "destructive",
+          onPress: () => act(() => native!.requestTurnOff(routine.id)),
+        },
+      ],
+    );
+  };
   const {
     minutes: parsedMinutes,
     earlyStartInvalid,
@@ -124,7 +142,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
     const done = act(() => {
       if (today) return saveToday(routine);
       const focusMinutes = focusMinutesToSave(draft, state.config.focusMinutes);
-      if (focusMinutes !== null) saveConfig({ ...state.config, focusMinutes });
+      if (focusMinutes !== null) native!.setFocusMinutes(focusMinutes);
       saveWeekly(routine);
     });
     if (!done) return;
@@ -143,13 +161,25 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
               <Switch
                 accessibilityLabel="Enabled"
                 value={routine.enabled}
-                onValueChange={(enabled) => dispatch({ type: "setEnabled", enabled })}
+                disabled={!!turningOff}
+                onValueChange={setEnabled}
                 trackColor={{ false: colors.raised, true: colors.accent }}
                 thumbColor={routine.enabled ? colors.onAccent : colors.muted}
               />
             }
           />
         </Card>
+
+        {!!turningOff && (
+          <Card className="gap-3 p-4">
+            <Text className="text-base text-ink">Turns off {clockLabel(turningOff)}.</Text>
+            <Button
+              title="Keep on"
+              variant="secondary"
+              onPress={() => act(() => native!.cancelTurnOff(routine.id))}
+            />
+          </Card>
+        )}
 
         {overridden && (
           <Notice icon="calendar-today">

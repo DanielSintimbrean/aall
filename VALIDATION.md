@@ -7,7 +7,7 @@
 - Expo dependency compatibility check.
 - TypeScript strict typecheck, Vite+ formatting and lint, ktlint formatting and lint for Kotlin.
 - 25 shared TypeScript tests for defaults, input validation, screen labels and routine drafts.
-- 43 native JVM tests for overnight ownership, Only today, elapsed timers and reboot deadlines, overlapping requests, bypass suppression and expiry, retry verification, DST booking boundaries, the earliest bookable day off, timezone-aware temporary expiry, 10,000 generated arithmetic challenges, config parsing, charging-started bedtime, day-off transitions, DND ownership, blocking rules, routine status, next-change scheduling and status notices.
+- 53 native JVM tests for the turn-off notice, overnight ownership, Only today, elapsed timers and reboot deadlines, overlapping requests, bypass suppression and expiry, retry verification, DST booking boundaries, the earliest bookable day off, timezone-aware temporary expiry, 10,000 generated arithmetic challenges, config parsing, charging-started bedtime, day-off transitions, DND ownership, blocking rules, routine status, next-change scheduling and status notices.
 - Metro production Android export.
 - Independent arm64 standalone release APK build, including native compilation and Android release lint.
 - APK signed with persistent release certificate, installed and launched through ADB without Metro.
@@ -53,6 +53,16 @@ The checks above ran on a build that also set a notification timeout and public 
 Not tested on the phone: the lock screen, App access, Bedtime and Grayscale notices, day off, needs setup and granting DND access after the channel exists. JVM tests cover the wording and priority of those notices.
 
 `uiautomator dump` suspends accessibility services while it runs, so aall briefly reports accessibility as missing during UI automation. Confirm that state from a screenshot taken without a dump.
+
+## Turn-off notice checks
+
+Emulator `aall-test`, Android 17, on Grayscale during its active hours. A pass here doesn't clear the clock, reboot or elapsed-time checks for the physical phone.
+
+- Turning the switch off opened the confirm dialog. Keep on left it on. Starting the notice showed the deadline in the editor and on Today, disabled the switch, and left grayscale on.
+- Moving the clock forward 4 days kept the routine on during the same boot. The shown deadline stayed 72 hours from the request in elapsed time.
+- Keep on ended the notice. A real reboot kept the notice and its deadline.
+- With `boot_count` raised and the clock 4 days ahead, standing in for a reboot past the deadline, the routine showed Disabled and grayscale turned off. No real 72 hours passed, so the alarm firing at the deadline is covered only by the JVM test on `nextChange`.
+- Turning it back on with Save weekly applied at once.
 
 ## Charging events
 

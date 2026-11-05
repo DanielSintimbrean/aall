@@ -77,7 +77,8 @@ class Store(context: Context) {
     check(edit.commit())
   }
 
-  private val timerKeys = listOf(Timer.FOCUS, Timer.PAUSE, Timer.GRAY_TEST)
+  private val timerKeys =
+    listOf(Timer.FOCUS, Timer.PAUSE, Timer.GRAY_TEST) + RoutineKind.entries.map(Timer::turnOff)
 
   private fun overrideKey(kind: RoutineKind) = "today.${kind.id}"
 
