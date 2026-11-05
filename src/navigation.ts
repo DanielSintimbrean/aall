@@ -7,5 +7,6 @@ export type Routes = {
   Bypass: undefined;
   DaysOff: undefined;
   Setup: undefined;
+  Movent: undefined;
 };
 export type ScreenProps<Name extends keyof Routes> = NativeStackScreenProps<Routes, Name>;

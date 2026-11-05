@@ -8,6 +8,12 @@ The first release contains scheduled app blocking, manually started focus sessio
 
 It also includes scheduled days off without restrictions. A day off must be booked at least 72 hours before the day begins.
 
+## Apps
+
+Apps are small tools for one personal need, written directly in this codebase. Each one lives in `src/apps/<name>` and is added to `src/apps/index.ts`, which puts it on Today and in navigation. An app that needs Android code has its own package and Expo module beside `automation`. Apps do not depend on routines.
+
+The first app, Movent, shows the next 2 hours of buses at Cascada de les Moles (stop 126). Turned on, a foreground service keeps a silent notification with the next bus and those after it, refreshing every minute while the screen is on and resuming after a reboot. Each time is marked GPS when Mou-te gives an updated time, Localizado when the bus has a position but no updated time, and Sin confirmar when it is under 30 minutes away with neither. The data comes from the undocumented gateway behind Mou-te's web app, which may change without notice.
+
 ## Agreed behavior
 
 - Each routine has its own blocked-app list; bedtime instead has an allowed-app list.

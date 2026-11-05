@@ -9,6 +9,7 @@ import {
 } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { withUniwind } from "uniwind";
+import { apps } from "./src/apps";
 import type { Routes } from "./src/navigation";
 import { AppPicker } from "./src/screens/AppPicker";
 import { Bypass } from "./src/screens/Bypass";
@@ -73,6 +74,14 @@ export default function App() {
               component={Setup}
               options={{ title: "Configuración del teléfono" }}
             />
+            {apps.map((app) => (
+              <Stack.Screen
+                key={app.route}
+                name={app.route}
+                component={app.screen}
+                options={{ title: app.title }}
+              />
+            ))}
           </Stack.Navigator>
         </NavigationContainer>
       </StoreProvider>
