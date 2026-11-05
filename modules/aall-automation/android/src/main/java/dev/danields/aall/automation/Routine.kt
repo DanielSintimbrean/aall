@@ -24,6 +24,13 @@ enum class RoutineKind(
   BEDTIME("bedtime", AppRule.ALLOW_LISTED, usesDnd = true, usesGrayscale = true),
   GRAYSCALE("grayscale", AppRule.NONE, usesDnd = false, usesGrayscale = true);
 
+  val title: String get() = when (this) {
+    ACCESS -> "Acceso a aplicaciones"
+    FOCUS -> "Concentración"
+    BEDTIME -> "Descanso"
+    GRAYSCALE -> "Escala de grises"
+  }
+
   fun runs(scheduled: Boolean, focusRemaining: Long, earlyUntil: Long, now: Long) = when (this) {
     FOCUS -> focusRemaining > 0
     ACCESS -> !scheduled
@@ -116,7 +123,7 @@ data class Routine(
       if (kind == RoutineKind.BEDTIME) require(windows.size == 1)
       return Routine(
         kind,
-        r.getString("title"),
+        kind.title,
         r.getBoolean("enabled"),
         windows,
         packages(r, "apps"),

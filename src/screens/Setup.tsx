@@ -15,32 +15,32 @@ const permissions: {
   {
     kind: "accessibility",
     icon: "shield-lock-outline",
-    title: "App blocking",
-    why: "Accessibility access detects which app is open.",
+    title: "Bloqueo de aplicaciones",
+    why: "El permiso de accesibilidad detecta qué aplicación está abierta.",
   },
   {
     kind: "dnd",
     icon: "bell-off-outline",
-    title: "Do Not Disturb",
-    why: "Used by Focus and Bedtime.",
+    title: "No molestar",
+    why: "Se utiliza en Concentración y Descanso.",
   },
   {
     kind: "alarms",
     icon: "alarm",
-    title: "Exact alarms",
-    why: "Routines start and end on time.",
+    title: "Alarmas exactas",
+    why: "Las rutinas empiezan y terminan a la hora prevista.",
   },
   {
     kind: "notifications",
     icon: "bell-outline",
-    title: "Notifications",
-    why: "Shows what is active and when it ends.",
+    title: "Notificaciones",
+    why: "Muestra qué está activo y cuándo termina.",
   },
   {
     kind: "grayscale",
     icon: "palette-outline",
-    title: "Grayscale",
-    why: "Needs a one-time grant over ADB.",
+    title: "Escala de grises",
+    why: "Requiere conceder un permiso una sola vez mediante ADB.",
   },
 ];
 
@@ -49,7 +49,7 @@ export function Setup() {
   const granted = state.permissions;
   return (
     <Page>
-      <Section title="Permissions">
+      <Section title="Permisos">
         <Card>
           {permissions.map((permission, index) => {
             const ok = granted[permission.kind];
@@ -61,7 +61,7 @@ export function Setup() {
                   icon={permission.icon}
                   title={permission.title}
                   subtitle={permission.why}
-                  accessibilityLabel={`${permission.title}, ${ok ? "granted" : "needs setup"}`}
+                  accessibilityLabel={`${permission.title}, ${ok ? "concedido" : "requiere configuración"}`}
                   chevron={!adbOnly}
                   trailing={
                     <Icon
@@ -80,12 +80,12 @@ export function Setup() {
       </Section>
       {!granted.accessibility && (
         <Notice tone="warn">
-          Sideloaded apps may need Allow restricted settings in app info before accessibility can be
-          enabled.
+          Para activar la accesibilidad en aplicaciones instaladas desde un APK, puede ser necesario
+          activar Permitir ajustes restringidos en la información de la aplicación.
         </Notice>
       )}
       {!granted.grayscale && (
-        <Section title="Grant grayscale over ADB">
+        <Section title="Conceder permiso de escala de grises mediante ADB">
           <Card className="p-4">
             <Text selectable className="font-mono text-sm leading-5 text-ink">
               {adbCommand}
@@ -93,17 +93,17 @@ export function Setup() {
           </Card>
         </Section>
       )}
-      <Section title="Check grayscale">
+      <Section title="Comprobar escala de grises">
         <View className="gap-2">
           <Button
-            title="Test for 10 seconds"
+            title="Probar durante 10 segundos"
             variant="secondary"
             icon="palette-outline"
             disabled={!granted.grayscale}
             onPress={() => act(() => native!.testGrayscale(true))}
           />
           <Button
-            title="Restore color now"
+            title="Restaurar el color ahora"
             variant="outline"
             disabled={!granted.grayscale}
             onPress={() => act(() => native!.testGrayscale(false))}

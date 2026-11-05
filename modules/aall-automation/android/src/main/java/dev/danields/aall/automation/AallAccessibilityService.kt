@@ -60,7 +60,8 @@ class AallAccessibilityService : AccessibilityService() {
     }
     layout.addView(
       TextView(this).apply {
-        text = "aall\nThis app is paused\n${decision.routines.joinToString { it.title }}"
+        text =
+          "aall\nEsta aplicación está bloqueada\n${decision.routines.joinToString { it.title }}"
         textSize = 24f
         setTextColor(Color.WHITE)
         gravity = Gravity.CENTER
@@ -68,7 +69,7 @@ class AallAccessibilityService : AccessibilityService() {
     )
     layout.addView(
       Button(this).apply {
-        text = "Open aall"
+        text = "Abrir aall"
         setOnClickListener {
           this@AallAccessibilityService.foreground = packageName
           Engine(this@AallAccessibilityService).reconcile()
@@ -82,7 +83,7 @@ class AallAccessibilityService : AccessibilityService() {
     )
     layout.addView(
       Button(this).apply {
-        text = "Home"
+        text = "Inicio"
         setOnClickListener { performGlobalAction(GLOBAL_ACTION_HOME) }
       }
     )

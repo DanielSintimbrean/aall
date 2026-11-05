@@ -215,14 +215,14 @@ object Reconcile {
   private fun errors(routines: List<Routine>, dnd: Boolean, gray: Boolean, p: Permissions) =
     buildList {
       if (routines.any { it.kind.appRule != AppRule.NONE } && !p.accessibility) {
-        add("App blocking needs accessibility access.")
+        add("El bloqueo de aplicaciones necesita el permiso de accesibilidad.")
       }
-      if (dnd && !p.dnd) add("DND access missing.")
+      if (dnd && !p.dnd) add("Falta el permiso de No molestar.")
       if (gray && routines.any { it.colorApps.isNotEmpty() } && !p.accessibility) {
-        add("Color exceptions need accessibility access.")
+        add("Las excepciones de color necesitan el permiso de accesibilidad.")
       }
-      if (gray && !p.grayscale) add("Grayscale needs the ADB grant.")
-      if (!p.alarms) add("Exact alarm access missing; changes may be delayed.")
+      if (gray && !p.grayscale) add("La escala de grises necesita el permiso mediante ADB.")
+      if (!p.alarms) add("Falta el permiso de alarmas exactas; los cambios pueden retrasarse.")
     }
 
   private fun nextChange(state: State, clock: Clock): Long {

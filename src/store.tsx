@@ -104,7 +104,9 @@ export function StoreProvider({
             refresh();
             return true;
           } catch (error) {
-            Alert.alert("That didn't work", errorMessage(error));
+            Alert.alert("No se ha podido completar la acción", errorMessage(error), [
+              { text: "Aceptar" },
+            ]);
             return false;
           }
         },

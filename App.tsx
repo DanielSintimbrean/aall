@@ -35,8 +35,8 @@ const theme: Theme = {
 
 const missingNativeModule = (
   <SafeAreaView className="flex-1 gap-2 bg-canvas p-6">
-    <Text className="text-2xl font-semibold text-ink">Install the aall Android APK</Text>
-    <Text className="text-base text-muted">Expo Go cannot run aall.</Text>
+    <Text className="text-2xl font-semibold text-ink">Instala el APK de aall para Android</Text>
+    <Text className="text-base text-muted">Expo Go no puede ejecutar aall.</Text>
   </SafeAreaView>
 );
 
@@ -64,11 +64,15 @@ export default function App() {
             <Stack.Screen
               name="AppPicker"
               component={AppPicker}
-              options={{ title: "Choose apps" }}
+              options={{ title: "Elegir aplicaciones" }}
             />
-            <Stack.Screen name="Bypass" component={Bypass} options={{ title: "Pause" }} />
-            <Stack.Screen name="DaysOff" component={DaysOff} options={{ title: "Days off" }} />
-            <Stack.Screen name="Setup" component={Setup} options={{ title: "Phone setup" }} />
+            <Stack.Screen name="Bypass" component={Bypass} options={{ title: "Pausa" }} />
+            <Stack.Screen name="DaysOff" component={DaysOff} options={{ title: "Días libres" }} />
+            <Stack.Screen
+              name="Setup"
+              component={Setup}
+              options={{ title: "Configuración del teléfono" }}
+            />
           </Stack.Navigator>
         </NavigationContainer>
       </StoreProvider>
