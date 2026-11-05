@@ -78,12 +78,14 @@ class Store(context: Context) {
   }
 
   fun nightLightSessionJson(s: NightLightSession) = JSONObject()
+    .put("startedAt", s.startedAt)
     .put("before", nightLightJson(s.before))
     .put("startTemperature", s.startTemperature)
     .put("wrote", nightLightJson(s.wrote))
     .put("yielded", s.yielded)
 
   fun parseNightLightSession(o: JSONObject) = NightLightSession(
+    o.optLong("startedAt"),
     parseNightLight(o.getJSONObject("before")),
     o.getInt("startTemperature"),
     parseNightLight(o.getJSONObject("wrote")),

@@ -36,6 +36,24 @@ class NightLightTest {
     assertEquals(half, late.settings.temperature)
   }
 
+  @Test fun betweenStepsTheTemperatureHolds() {
+    val step = NightLight.advance(started().session, started().settings, ramp, at(5), range)
+    val later = NightLight.advance(step.session, step.settings, ramp, at(6) - 1, range)
+    assertEquals(step.settings, later.settings)
+  }
+
+  @Test fun sessionFromAnEndedWindowIsSettledAndTheNewRampStarts() {
+    val step = started()
+    val moved = step.settings.copy(temperature = 3000)
+    val yielded = NightLight.advance(step.session, moved, ramp, at(30), range).session
+    val next = ramp.copy(startedAt = at(1440))
+    val restarted = NightLight.advance(yielded, moved, next, at(1440), range)
+    assertEquals(NightLightSettings(1, 4082, 0), restarted.settings)
+    assertFalse(restarted.session!!.yielded)
+    assertEquals(off.autoMode, restarted.session!!.before.autoMode)
+    assertEquals(off.activated, restarted.session!!.before.activated)
+  }
+
   @Test fun rampNeverStepsBackward() {
     var step = started()
     var last = step.settings.temperature

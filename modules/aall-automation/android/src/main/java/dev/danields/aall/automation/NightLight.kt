@@ -12,6 +12,7 @@ data class NightLightRamp(val startedAt: Long, val minutes: Int, val intensity: 
 
 /** What aall took over from Android, kept so the window's end can give it back. */
 data class NightLightSession(
+  val startedAt: Long,
   val before: NightLightSettings,
   val startTemperature: Int,
   val wrote: NightLightSettings,
@@ -45,16 +46,22 @@ object NightLight {
     range: IntRange
   ): NightLightStep {
     if (ramp == null) return NightLightStep(null, session?.let { release(it, read) } ?: read)
+    // A session from another occurrence ended unseen, for example with the phone switched off.
+    if (session != null && session.startedAt != ramp.startedAt) {
+      return advance(null, release(session, read), ramp, now, range)
+    }
     if (session != null && (session.yielded || read != session.wrote)) {
       return NightLightStep(session.copy(yielded = true), read)
     }
     val start = session?.startTemperature ?: startTemperature(read, range)
     val target = minOf(start, temperature(ramp.intensity, range))
-    val progress = ((now - ramp.startedAt).toDouble() / (ramp.endsAt - ramp.startedAt))
+    // Whole steps only, because every change can flash and app switches also reach this.
+    val progress = ((now - ramp.startedAt) / STEP * STEP).toDouble()
+      .div(ramp.endsAt - ramp.startedAt)
       .coerceIn(0.0, 1.0)
     val wanted = NightLightSettings(1, start + ((target - start) * progress).roundToInt(), 0)
     return NightLightStep(
-      (session ?: NightLightSession(read, start, wanted)).copy(wrote = wanted),
+      (session ?: NightLightSession(ramp.startedAt, read, start, wanted)).copy(wrote = wanted),
       wanted
     )
   }
