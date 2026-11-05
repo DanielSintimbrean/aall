@@ -56,13 +56,15 @@ function hero(state: Snapshot, now: number) {
   return { title: "Time is yours", detail: nextLine, on: false };
 }
 
-function routineDetail(routine: Routine, state: Snapshot) {
+function routineDetail(routine: Routine, state: Snapshot, now: number) {
   const editor = editors[routine.id];
+  const turningOff = state.turningOff[routine.id];
+  const off = turningOff ? ` · off ${clockLabel(turningOff, now)}` : "";
   if (editor.session)
-    return `${state.config.focusMinutes} min · ${routine.apps.length} apps blocked`;
+    return `${state.config.focusMinutes} min · ${routine.apps.length} apps blocked${off}`;
   const hours = `${editor.cardPrefix ?? ""}${windowsLabel(routine.windows)}`;
   const days = routine.windows.length === 1 ? ` · ${daysLabel(routine.windows[0].days)}` : "";
-  return `${hours}${days}${state.overrides[routine.id] ? " · only today" : ""}`;
+  return `${hours}${days}${state.overrides[routine.id] ? " · only today" : ""}${off}`;
 }
 
 export function Today({ navigation }: ScreenProps<"Today">) {
@@ -130,7 +132,7 @@ export function Today({ navigation }: ScreenProps<"Today">) {
               <Row
                 icon={routineIcons[routine.id]}
                 title={routine.title}
-                subtitle={routineDetail(routine, state)}
+                subtitle={routineDetail(routine, state, now)}
                 trailing={<StatusPill status={state.statuses[routine.id]} />}
                 onPress={() => open(routine)}
               />

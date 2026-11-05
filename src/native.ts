@@ -1,13 +1,15 @@
 import { requireOptionalNativeModule } from "expo-modules-core";
-import type { Config, InstalledApp, Snapshot, Routine } from "./model";
+import type { InstalledApp, Snapshot, Routine } from "./model";
 type Native = {
   initialize(config: string): void;
   getSnapshot(): string;
   reconcile(): void;
-  setConfig(config: string): void;
+  setFocusMinutes(minutes: number): void;
   saveWeekly(routine: string): void;
   installedApps(): InstalledApp[];
   appIcons(): Promise<Record<string, string>>;
+  requestTurnOff(id: string): void;
+  cancelTurnOff(id: string): void;
   startFocus(): void;
   challenge(): string;
   solve(answer: string): boolean;
@@ -20,9 +22,6 @@ type Native = {
 export const native = requireOptionalNativeModule<Native>("AallAutomation");
 export function snapshot(): Snapshot {
   return JSON.parse(native!.getSnapshot());
-}
-export function saveConfig(config: Config) {
-  native!.setConfig(JSON.stringify(config));
 }
 export function saveWeekly(routine: Routine) {
   native!.saveWeekly(JSON.stringify(routine));

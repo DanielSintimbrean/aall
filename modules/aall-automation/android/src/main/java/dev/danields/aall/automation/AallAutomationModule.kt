@@ -19,8 +19,10 @@ class AallAutomationModule : Module() {
     Function("initialize") { raw: String -> Engine(context).initialize(raw) }
     Function("getSnapshot") { Engine(context).snapshot().toString() }
     Function("reconcile") { Engine(context).reconcile() }
-    Function("setConfig") { raw: String -> Engine(context).setConfig(raw) }
+    Function("setFocusMinutes") { minutes: Int -> Engine(context).setFocusMinutes(minutes) }
     Function("saveWeekly") { raw: String -> Engine(context).saveWeekly(raw) }
+    Function("requestTurnOff") { id: String -> Engine(context).requestTurnOff(id) }
+    Function("cancelTurnOff") { id: String -> Engine(context).cancelTurnOff(id) }
     Function("startFocus") { Engine(context).focus() }
     Function("challenge") { Engine(context).challenge() }
     Function("solve") { answer: String -> Engine(context).solve(answer) }

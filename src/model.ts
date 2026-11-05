@@ -19,6 +19,7 @@ export type Snapshot = {
   daysOff: string[];
   earliestDayOff: string;
   focusUntil: number;
+  turningOff: Partial<Record<RoutineId, number>>;
   pauseUntil: number;
   nextChange: number;
   permissions: {

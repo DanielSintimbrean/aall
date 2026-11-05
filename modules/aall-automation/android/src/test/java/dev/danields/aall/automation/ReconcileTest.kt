@@ -306,6 +306,114 @@ class ReconcileTest {
     assertEquals(setOf(RoutineKind.GRAYSCALE), after.overrides.keys)
   }
 
+  private val notice72h = Timer.TURN_OFF_NOTICE
+  private val turnOffKey = Timer.turnOff(RoutineKind.BEDTIME)
+  private val requestedAt = clock("2026-11-02T12:00:00", elapsed = 1000)
+
+  private fun turningOff() =
+    Reconcile.requestTurnOff(state(bedtime), RoutineKind.BEDTIME, requestedAt)
+
+  private fun assertRejected(block: () -> Unit) {
+    assertTrue(runCatching(block).exceptionOrNull() is IllegalArgumentException)
+  }
+
+  @Test fun routineKeepsRunningUntilTheNoticeEndsThenTurnsOff() {
+    val night = clock("2026-11-02T23:00:00", elapsed = 1000 + 11 * 3600000)
+    assertEquals(listOf(RoutineKind.BEDTIME), kinds(decide(turningOff(), night)))
+    val after = clock("2026-11-05T23:00:00", elapsed = 1000 + notice72h)
+    val done = decide(turningOff(), after)
+    assertEquals(emptyList<RoutineKind>(), kinds(done))
+    assertFalse(done.state.config.routines.single().enabled)
+    assertFalse(turnOffKey in done.state.timers)
+  }
+
+  @Test fun movingTheClockDoesNotShortenTheNoticeDuringABoot() {
+    val moved = clock("2026-11-09T23:00:00", elapsed = 1000 + 3600000)
+    assertEquals(listOf(RoutineKind.BEDTIME), kinds(decide(turningOff(), moved)))
+  }
+
+  @Test fun noticeSurvivesARebootAndEndsByWallClock() {
+    val before = clock("2026-11-05T11:00:00", boot = 2, elapsed = 50)
+    val saved = decide(turningOff(), before).state
+    assertTrue(saved.config.routines.single().enabled)
+    assertEquals(3600000L, saved.timers[turnOffKey]!!.remaining(before))
+    val after = clock("2026-11-05T12:00:00", boot = 3, elapsed = 50)
+    assertFalse(decide(saved, after).state.config.routines.single().enabled)
+  }
+
+  @Test fun alarmWakesTheAppWhenTheNoticeEnds() {
+    val idle = clock("2026-11-05T11:59:00", elapsed = 1000 + notice72h - 60000)
+    assertEquals(requestedAt.wall + notice72h, decide(turningOff(), idle).nextChange)
+  }
+
+  @Test fun repeatedRequestsAndWeeklySavesKeepTheFirstDeadline() {
+    val later = clock("2026-11-03T12:00:00", elapsed = 86401000)
+    val again = Reconcile.requestTurnOff(turningOff(), RoutineKind.BEDTIME, later)
+    assertEquals(turningOff().timers, again.timers)
+    assertEquals(turningOff().timers, Reconcile.saveWeekly(again, bedtime).timers)
+  }
+
+  @Test fun cancellingKeepsTheRoutineOn() {
+    val after = clock("2026-11-06T12:00:00", elapsed = 1000 + notice72h + 1)
+    val kept = decide(Reconcile.cancelTurnOff(turningOff(), RoutineKind.BEDTIME), after)
+    assertTrue(kept.state.config.routines.single().enabled)
+  }
+
+  @Test fun onlyAnEnabledWeeklyRoutineCanStartANotice() {
+    assertRejected {
+      Reconcile.requestTurnOff(
+        state(bedtime.copy(enabled = false)),
+        RoutineKind.BEDTIME,
+        requestedAt
+      )
+    }
+  }
+
+  @Test fun saveCannotTurnAWeeklyRoutineOffAtOnce() {
+    val off = bedtime.copy(enabled = false)
+    assertRejected { Reconcile.saveWeekly(state(bedtime), off) }
+    assertRejected { Reconcile.requireNoInstantTurnOff(state(bedtime), off) }
+    Reconcile.requireNoInstantTurnOff(state(off), off)
+    assertTrue(Reconcile.saveWeekly(state(off), bedtime).config.routines.single().enabled)
+  }
+
+  @Test fun aDisabledOverrideFromAnOlderBuildNoLongerTurnsARoutineOff() {
+    val date = LocalDate.parse("2026-11-02")
+    val old = Override(bedtime.copy(enabled = false), date, 0)
+    val d = decide(
+      state(bedtime) { copy(overrides = mapOf(RoutineKind.BEDTIME to old)) },
+      clock("2026-11-02T23:00:00")
+    )
+    assertEquals(listOf(RoutineKind.BEDTIME), kinds(d))
+    assertTrue(d.state.overrides.isEmpty())
+  }
+
+  @Test fun finishingEndsTheOverrideAndWhatTheRoutineHadRunning() {
+    val date = LocalDate.parse("2026-11-05")
+    val focus = routine(RoutineKind.FOCUS)
+    val now = clock("2026-11-05T21:00:00", elapsed = 1000 + notice72h)
+    val done = decide(
+      state(bedtime, focus) {
+        copy(
+          overrides = mapOf(RoutineKind.BEDTIME to Override(bedtime, date, 0)),
+          bedtimeDate = date,
+          bedtimeUntil = at("2026-11-06T07:00:00"),
+          timers = mapOf(
+            turnOffKey to Timer.start(requestedAt, notice72h),
+            Timer.turnOff(RoutineKind.FOCUS) to Timer.start(requestedAt, notice72h),
+            Timer.FOCUS to Timer.start(now, 3000000)
+          )
+        )
+      },
+      now,
+      plugged = true
+    ).state
+    assertTrue(done.overrides.isEmpty())
+    assertNull(done.bedtimeDate)
+    assertEquals(0L, done.bedtimeUntil)
+    assertTrue(done.timers.isEmpty())
+  }
+
   @Test fun nextChangeKeepsABoundaryMillisecondsAway() {
     val now = clock("2026-11-02T12:00:00")
     val ending = State().copy(timers = mapOf(Timer.PAUSE to Timer.start(now, 50)))

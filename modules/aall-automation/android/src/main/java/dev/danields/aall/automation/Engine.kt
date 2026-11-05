@@ -36,15 +36,17 @@ class Engine(private val context: Context) {
 
   private fun update(change: (State) -> State) {
     val state = store.load()
-    store.save(state, change(state))
+    store.save(state, change(Reconcile.finishTurnOffs(state, clock())))
     reconcile()
   }
 
   fun initialize(raw: String) {
-    if (!store.hasConfig()) setConfig(raw)
+    if (!store.hasConfig()) update { it.copy(config = Config.parse(raw)) }
   }
 
-  fun setConfig(raw: String) = update { it.copy(config = Config.parse(raw)) }
+  fun setFocusMinutes(minutes: Int) = update {
+    it.copy(config = it.config.copy(focusMinutes = minutes).validated())
+  }
 
   fun saveWeekly(raw: String) = update {
     Reconcile.saveWeekly(it, Routine.parse(JSONObject(raw))).also { saved ->
@@ -55,12 +57,21 @@ class Engine(private val context: Context) {
   fun overrideToday(id: String, raw: String) = update { state ->
     val r = Routine.parse(JSONObject(raw))
     require(r.kind.id == id && r.kind != RoutineKind.FOCUS)
+    Reconcile.requireNoInstantTurnOff(state, r)
     state.config.with(r).validated()
     val clock = clock()
     state.copy(
       overrides = state.overrides +
         (r.kind to Override(r, clock.today, Rules.overrideExpiry(r, clock.today, clock.zone)))
     )
+  }
+
+  fun requestTurnOff(id: String) = update {
+    Reconcile.requestTurnOff(it, RoutineKind.fromId(id), clock())
+  }
+
+  fun cancelTurnOff(id: String) = update {
+    Reconcile.cancelTurnOff(it, RoutineKind.fromId(id))
   }
 
   fun book(date: String) = update { state ->
@@ -235,6 +246,14 @@ class Engine(private val context: Context) {
       .put("daysOff", JSONArray(d.state.daysOff))
       .put("earliestDayOff", Rules.earliestDayOff(clock.wall, clock.zone).toString())
       .put("focusUntil", clock.wall + d.focusRemaining)
+      .put(
+        "turningOff",
+        JSONObject(
+          RoutineKind.entries.mapNotNull { kind ->
+            d.state.timers[Timer.turnOff(kind)]?.let { kind.id to clock.wall + it.remaining(clock) }
+          }.toMap()
+        )
+      )
       .put("pauseUntil", clock.wall + d.pauseRemaining)
       .put("nextChange", d.nextChange)
       .put(

@@ -16,6 +16,9 @@ data class Timer(val boot: Int, val elapsed: Long, val wall: Long, val duration:
     const val FOCUS = "focus"
     const val PAUSE = "pause"
     const val GRAY_TEST = "grayTest"
+    const val TURN_OFF_NOTICE = 72L * 3600000
+
+    fun turnOff(kind: RoutineKind) = "turnOff.${kind.id}"
 
     fun start(clock: Clock, duration: Long) = Timer(
       clock.boot,
@@ -71,7 +74,7 @@ object Reconcile {
   fun decide(before: State, env: Environment): Decision {
     val clock = env.clock
     val now = clock.wall
-    val settled = settleOverrides(reanchorTimers(before, clock), clock)
+    val settled = settleOverrides(finishTurnOffs(reanchorTimers(before, clock), clock), clock)
     val state =
       refreshBedtime(if (env.plugged) startBedtimeEarly(settled, clock) else settled, clock)
     val focusRemaining = remaining(state, Timer.FOCUS, clock)
@@ -109,10 +112,50 @@ object Reconcile {
     )
   }
 
-  fun saveWeekly(state: State, routine: Routine) = state.copy(
-    config = state.config.with(routine),
-    overrides = state.overrides - routine.kind
-  )
+  fun saveWeekly(state: State, routine: Routine): State {
+    requireNoInstantTurnOff(state, routine)
+    return state.copy(
+      config = state.config.with(routine),
+      overrides = state.overrides - routine.kind
+    )
+  }
+
+  fun requireNoInstantTurnOff(state: State, routine: Routine) =
+    require(routine.enabled || !weeklyEnabled(state, routine.kind)) {
+      "Turning a routine off takes 72 hours."
+    }
+
+  fun requestTurnOff(state: State, kind: RoutineKind, clock: Clock): State {
+    require(weeklyEnabled(state, kind)) { "This routine is already off." }
+    val key = Timer.turnOff(kind)
+    return if (key in state.timers) {
+      state
+    } else {
+      state.copy(timers = state.timers + (key to Timer.start(clock, Timer.TURN_OFF_NOTICE)))
+    }
+  }
+
+  fun cancelTurnOff(state: State, kind: RoutineKind) =
+    state.copy(timers = state.timers - Timer.turnOff(kind))
+
+  /** Also ends what the routine had running, so turning it back on doesn't revive it. */
+  fun finishTurnOffs(state: State, clock: Clock) = RoutineKind.entries
+    .filter { (state.timers[Timer.turnOff(it)]?.remaining(clock) ?: 1) <= 0 }
+    .fold(state) { s, kind ->
+      s.copy(
+        config = s.config.copy(
+          routines = s.config.routines.map { if (it.kind == kind) it.copy(enabled = false) else it }
+        ),
+        overrides = s.overrides - kind,
+        timers = s.timers - Timer.turnOff(kind) -
+          (if (kind == RoutineKind.FOCUS) setOf(Timer.FOCUS) else emptySet()),
+        bedtimeDate = s.bedtimeDate.takeIf { kind != RoutineKind.BEDTIME },
+        bedtimeUntil = s.bedtimeUntil.takeIf { kind != RoutineKind.BEDTIME } ?: 0
+      )
+    }
+
+  private fun weeklyEnabled(state: State, kind: RoutineKind) =
+    state.config.routines.any { it.kind == kind && it.enabled }
 
   private fun startBedtimeEarly(before: State, clock: Clock): State {
     val state = settleOverrides(before, clock)
@@ -154,7 +197,10 @@ object Reconcile {
   private fun settleOverrides(state: State, clock: Clock) = state.copy(
     overrides = state.overrides
       .mapValues { (_, o) -> o.copy(until = Rules.overrideExpiry(o.routine, o.date, clock.zone)) }
-      .filterValues { clock.wall < it.until }
+      // Older builds could save a disabled copy, which must not turn off a weekly routine.
+      .filter { (kind, o) ->
+        clock.wall < o.until && (o.routine.enabled || !weeklyEnabled(state, kind))
+      }
   )
 
   private fun refreshBedtime(state: State, clock: Clock): State {
@@ -187,7 +233,7 @@ object Reconcile {
       today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli(),
       state.bedtimeUntil
     )
-    for (key in listOf(Timer.FOCUS, Timer.PAUSE, Timer.GRAY_TEST)) {
+    for (key in state.timers.keys) {
       remaining(state, key, clock).takeIf { it > 0 }?.let { candidates.add(now + it) }
     }
     for (base in state.config.routines) {

@@ -14,6 +14,7 @@ It also includes scheduled days off without restrictions. A day off must be book
 - Phone calls, Android Settings, and aall stay accessible.
 - Weekly schedules are normal. "Only today" makes a temporary adjustment.
 - A day off provides a calendar day without aall restrictions, including focus and bedtime, and requires a minimum of 72 hours of advance notice before its starting midnight. Cancellation is allowed at any time. Moving a booking requires meeting the 72-hour deadline for the new date.
+- Turning a routine on takes effect at once. Turning off a routine that's on weekly requires 72 elapsed hours of notice, and it keeps following its schedule until then. "Keep on" cancels the notice at any time. "Only today" can't turn a routine off. Editing hours and app lists stays immediate, so it can still weaken a routine.
 - Overlapping routines retain their restrictions independently. Ending focus does not release bedtime restrictions.
 - A bypass presents an arithmetic expression with three integers in the inclusive range 50 to 999 and addition and subtraction. The final result must be in the inclusive range -999 to 999.
 - A correct answer pauses restrictions for 15 minutes. Current routines resume afterward. Wrong answers retry the same expression.
