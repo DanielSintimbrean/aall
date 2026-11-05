@@ -166,6 +166,21 @@ class ReconcileTest {
     )
   }
 
+  @Test fun systemUiKeepsTheAppColorExceptionButReleasesTheBlockingScreen() {
+    val now = clock("2026-11-02T23:00:00")
+    val before = state(bedtime)
+    val app = Environment(now, "maps", Rules.alwaysAllowed, false, allow)
+    val blockedApp = app.copy(foreground = "blocked", foregroundApp = "blocked")
+    assertEquals(false, Reconcile.decide(before, app).setGrayscale)
+    assertTrue(Reconcile.decide(before, app).blocked)
+    val systemUi = app.copy(foreground = "com.android.systemui")
+    assertEquals(false, Reconcile.decide(before, systemUi).setGrayscale)
+    assertFalse(Reconcile.decide(before, systemUi).blocked)
+    val blockedSystemUi = blockedApp.copy(foreground = "com.android.systemui")
+    assertEquals(true, Reconcile.decide(before, blockedSystemUi).setGrayscale)
+    assertFalse(Reconcile.decide(before, blockedSystemUi).blocked)
+  }
+
   @Test fun colorExceptionOnlyReleasesItsOwnGrayscaleRequest() {
     val now = clock("2026-11-02T23:00:00")
     val grayscale = routine(RoutineKind.GRAYSCALE, listOf(Window(time(21), time(7), allDays)))

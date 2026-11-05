@@ -4,10 +4,13 @@ import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.view.Gravity
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -18,6 +21,8 @@ class AallAccessibilityService : AccessibilityService() {
   }
 
   var foreground = ""
+  var foregroundApp = ""
+    private set
   private var overlay: android.view.View? = null
   private var powerRegistered = false
   private val powerReceiver = AutomationReceiver()
@@ -39,9 +44,26 @@ class AallAccessibilityService : AccessibilityService() {
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
     if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
     val pkg = event.packageName?.toString() ?: return
+    if (event.className == "android.inputmethodservice.SoftInputWindow" &&
+      getSystemService(InputMethodManager::class.java).enabledInputMethodList.any {
+        it.packageName == pkg
+      }
+    ) {
+      return
+    }
     if (pkg == packageName && overlay != null) return
-    foreground = pkg
+    // System UI and Recents leave the underlying app in front for color exceptions.
+    val systemUi = pkg == "com.android.systemui" ||
+      (event.className == "com.android.quickstep.RecentsActivity" && isSystemApp(pkg))
+    if (!systemUi) foregroundApp = pkg
+    foreground = if (systemUi) "com.android.systemui" else pkg
     Engine(this).reconcile()
+  }
+
+  private fun isSystemApp(pkg: String) = try {
+    packageManager.getApplicationInfo(pkg, 0).flags and ApplicationInfo.FLAG_SYSTEM != 0
+  } catch (_: PackageManager.NameNotFoundException) {
+    false
   }
 
   fun update(decision: Decision) {
@@ -71,6 +93,7 @@ class AallAccessibilityService : AccessibilityService() {
       Button(this).apply {
         text = "Abrir aall"
         setOnClickListener {
+          this@AallAccessibilityService.foregroundApp = packageName
           this@AallAccessibilityService.foreground = packageName
           Engine(this@AallAccessibilityService).reconcile()
           startActivity(
