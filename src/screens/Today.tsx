@@ -73,7 +73,7 @@ function hero(state: Snapshot, now: number) {
 function routineDetail(routine: Routine, state: Snapshot, now: number) {
   const editor = editors[routine.id];
   const turningOff = state.turningOff[routine.id];
-  const off = turningOff ? ` · off ${clockLabel(turningOff, now)}` : "";
+  const off = turningOff ? ` · se desactiva el ${clockLabel(turningOff, now)}` : "";
   if (editor.session)
     return `${state.config.focusMinutes} min · ${routine.apps.length} aplicaciones bloqueadas${off}`;
   const hours = `${editor.cardPrefix ?? ""}${windowsLabel(routine.windows)}`;

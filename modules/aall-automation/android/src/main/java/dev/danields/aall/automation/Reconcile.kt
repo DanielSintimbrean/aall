@@ -122,11 +122,11 @@ object Reconcile {
 
   fun requireNoInstantTurnOff(state: State, routine: Routine) =
     require(routine.enabled || !weeklyEnabled(state, routine.kind)) {
-      "Turning a routine off takes 72 hours."
+      "Desactivar una rutina requiere 72 horas de antelación."
     }
 
   fun requestTurnOff(state: State, kind: RoutineKind, clock: Clock): State {
-    require(weeklyEnabled(state, kind)) { "This routine is already off." }
+    require(weeklyEnabled(state, kind)) { "Esta rutina ya está desactivada." }
     val key = Timer.turnOff(kind)
     return if (key in state.timers) {
       state

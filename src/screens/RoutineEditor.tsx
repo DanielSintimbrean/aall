@@ -120,12 +120,12 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
   const setEnabled = (enabled: boolean) => {
     if (enabled || !weeklyOn) return dispatch({ type: "setEnabled", enabled });
     Alert.alert(
-      `Turn off ${routine.title}?`,
-      "It keeps following its schedule for 72 hours, then turns off. You can cancel until then. This starts now and doesn't save other changes here.",
+      `¿Desactivar ${routine.title}?`,
+      "La rutina seguirá su horario durante 72 horas y después se desactivará. Puedes cancelar la solicitud hasta entonces. El plazo empieza ahora y no guarda los demás cambios de esta pantalla.",
       [
-        { text: "Keep on", style: "cancel" },
+        { text: "Mantener activada", style: "cancel" },
         {
-          text: "Start 72 hours",
+          text: "Iniciar plazo de 72 horas",
           style: "destructive",
           onPress: () => act(() => native!.requestTurnOff(routine.id)),
         },
@@ -172,9 +172,9 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
 
         {!!turningOff && (
           <Card className="gap-3 p-4">
-            <Text className="text-base text-ink">Turns off {clockLabel(turningOff)}.</Text>
+            <Text className="text-base text-ink">Se desactivará el {clockLabel(turningOff)}.</Text>
             <Button
-              title="Keep on"
+              title="Mantener activada"
               variant="secondary"
               onPress={() => act(() => native!.cancelTurnOff(routine.id))}
             />
