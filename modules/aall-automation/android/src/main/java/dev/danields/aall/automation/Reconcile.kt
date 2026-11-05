@@ -122,11 +122,11 @@ object Reconcile {
 
   fun requireNoInstantTurnOff(state: State, routine: Routine) =
     require(routine.enabled || !weeklyEnabled(state, routine.kind)) {
-      "Turning a routine off takes 72 hours."
+      "Desactivar una rutina requiere 72 horas de antelación."
     }
 
   fun requestTurnOff(state: State, kind: RoutineKind, clock: Clock): State {
-    require(weeklyEnabled(state, kind)) { "This routine is already off." }
+    require(weeklyEnabled(state, kind)) { "Esta rutina ya está desactivada." }
     val key = Timer.turnOff(kind)
     return if (key in state.timers) {
       state
@@ -215,14 +215,14 @@ object Reconcile {
   private fun errors(routines: List<Routine>, dnd: Boolean, gray: Boolean, p: Permissions) =
     buildList {
       if (routines.any { it.kind.appRule != AppRule.NONE } && !p.accessibility) {
-        add("App blocking needs accessibility access.")
+        add("El bloqueo de aplicaciones necesita el permiso de accesibilidad.")
       }
-      if (dnd && !p.dnd) add("DND access missing.")
+      if (dnd && !p.dnd) add("Falta el permiso de No molestar.")
       if (gray && routines.any { it.colorApps.isNotEmpty() } && !p.accessibility) {
-        add("Color exceptions need accessibility access.")
+        add("Las excepciones de color necesitan el permiso de accesibilidad.")
       }
-      if (gray && !p.grayscale) add("Grayscale needs the ADB grant.")
-      if (!p.alarms) add("Exact alarm access missing; changes may be delayed.")
+      if (gray && !p.grayscale) add("La escala de grises necesita el permiso mediante ADB.")
+      if (!p.alarms) add("Falta el permiso de alarmas exactas; los cambios pueden retrasarse.")
     }
 
   private fun nextChange(state: State, clock: Clock): Long {

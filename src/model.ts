@@ -34,10 +34,10 @@ export type Snapshot = {
   overrides: Partial<Record<RoutineId, Routine>>;
 };
 export const statusLabels: Record<RoutineStatus, string> = {
-  disabled: "Disabled",
-  needsSetup: "Needs setup",
-  active: "Active",
-  ready: "Ready",
+  disabled: "Desactivada",
+  needsSetup: "Requiere configuración",
+  active: "Activa",
+  ready: "Lista",
 };
 type Editor = {
   hint?: string;
@@ -47,44 +47,45 @@ type Editor = {
   noHoursWarning?: string;
   session: boolean;
   chargingStart: boolean;
-  appList?: "Allowed" | "Blocked";
+  appList?: "allowed" | "blocked";
   colorExceptions: boolean;
 };
 export const editors: Record<RoutineId, Editor> = {
   access: {
-    hint: "Selected apps are blocked outside allowed hours.",
-    windowLabel: "Allowed hours",
-    cardPrefix: "Allowed ",
+    hint: "Las aplicaciones seleccionadas se bloquean fuera del horario permitido.",
+    windowLabel: "Horario permitido",
+    cardPrefix: "Permitido ",
     windowCountEditable: true,
-    noHoursWarning: "With no allowed hours, the selected apps stay blocked all day.",
+    noHoursWarning:
+      "Sin un horario permitido, las aplicaciones seleccionadas permanecen bloqueadas todo el día.",
     session: false,
     chargingStart: false,
-    appList: "Blocked",
+    appList: "blocked",
     colorExceptions: false,
   },
   focus: {
-    hint: "Blocks the selected apps with Do Not Disturb and grayscale while a session runs.",
-    windowLabel: "Active hours",
+    hint: "Bloquea las aplicaciones seleccionadas y activa No molestar y la escala de grises durante la sesión.",
+    windowLabel: "Horario activo",
     windowCountEditable: false,
     session: true,
     chargingStart: false,
-    appList: "Blocked",
+    appList: "blocked",
     colorExceptions: true,
   },
   bedtime: {
-    hint: "Apps outside the allowed list are blocked, with Do Not Disturb and grayscale.",
-    windowLabel: "Active hours",
+    hint: "Bloquea las aplicaciones que no están permitidas y activa No molestar y la escala de grises.",
+    windowLabel: "Horario activo",
     windowCountEditable: false,
     session: false,
     chargingStart: true,
-    appList: "Allowed",
+    appList: "allowed",
     colorExceptions: true,
   },
   grayscale: {
-    hint: "The screen turns gray during active hours, except in apps that keep color.",
-    windowLabel: "Active hours",
+    hint: "La pantalla se muestra en gris durante el horario activo, excepto en las aplicaciones que conservan el color.",
+    windowLabel: "Horario activo",
     windowCountEditable: true,
-    noHoursWarning: "With no active hours, grayscale never turns on.",
+    noHoursWarning: "Sin un horario activo, la escala de grises nunca se activa.",
     session: false,
     chargingStart: false,
     colorExceptions: true,
@@ -115,7 +116,7 @@ export const defaults: Config = {
   routines: [
     {
       id: "access",
-      title: "App access",
+      title: "Acceso a aplicaciones",
       enabled: false,
       windows: [
         { start: "12:30", end: "13:15", days: all },
@@ -127,7 +128,7 @@ export const defaults: Config = {
     },
     {
       id: "focus",
-      title: "Focus",
+      title: "Concentración",
       enabled: false,
       windows: [],
       apps: social,
@@ -136,7 +137,7 @@ export const defaults: Config = {
     },
     {
       id: "bedtime",
-      title: "Bedtime",
+      title: "Descanso",
       enabled: false,
       windows: [{ start: "22:30", end: "07:00", days: all }],
       apps: [
@@ -152,7 +153,7 @@ export const defaults: Config = {
     },
     {
       id: "grayscale",
-      title: "Grayscale",
+      title: "Escala de grises",
       enabled: false,
       windows: [
         { start: "09:00", end: "13:00", days: [1, 2, 3, 4, 5] },
@@ -179,13 +180,13 @@ export function parseDate(value: string): Date | null {
 }
 
 export const weekdays = [
-  { id: 1, short: "M", name: "Monday" },
-  { id: 2, short: "T", name: "Tuesday" },
-  { id: 3, short: "W", name: "Wednesday" },
-  { id: 4, short: "T", name: "Thursday" },
-  { id: 5, short: "F", name: "Friday" },
-  { id: 6, short: "S", name: "Saturday" },
-  { id: 7, short: "S", name: "Sunday" },
+  { id: 1, short: "L", name: "lunes" },
+  { id: 2, short: "M", name: "martes" },
+  { id: 3, short: "X", name: "miércoles" },
+  { id: 4, short: "J", name: "jueves" },
+  { id: 5, short: "V", name: "viernes" },
+  { id: 6, short: "S", name: "sábado" },
+  { id: 7, short: "D", name: "domingo" },
 ] as const;
 export const earliestChargingStart = "20:00";
 export function minutesLeft(until: number, now = Date.now()) {
@@ -207,19 +208,19 @@ export function isOvernight(window: Window) {
 }
 export function daysLabel(days: number[]) {
   const set = [...days].sort((a, b) => a - b).join("");
-  if (set === "1234567") return "Every day";
-  if (set === "12345") return "Weekdays";
-  if (set === "67") return "Weekends";
+  if (set === "1234567") return "Todos los días";
+  if (set === "12345") return "De lunes a viernes";
+  if (set === "67") return "Fines de semana";
   return weekdays
     .filter((day) => days.includes(day.id))
     .map((day) => day.name.slice(0, 3))
     .join(", ");
 }
 export function windowsLabel(windows: Window[]) {
-  if (!windows.length) return "No hours set";
+  if (!windows.length) return "Sin horario";
   const shown = windows.length > 2 ? windows.slice(0, 1) : windows;
   const times = shown.map((w) => `${w.start}–${w.end}`);
-  if (windows.length > shown.length) times.push(`+${windows.length - shown.length} more`);
+  if (windows.length > shown.length) times.push(`+${windows.length - shown.length} más`);
   return times.join(" · ");
 }
 export function parseMinutes(value: string) {
@@ -229,17 +230,19 @@ export function parseMinutes(value: string) {
 export function dateLabel(value: string) {
   const date = parseDate(value);
   return date
-    ? date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
+    ? date.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })
     : value;
 }
 export function clockLabel(timestamp: number, now = Date.now()) {
   const date = new Date(timestamp);
   const time = dateToTime(date);
   if (localDate(date) === localDate(new Date(now))) return time;
-  return `${date.toLocaleDateString("en-GB", { weekday: "short" })} ${time}`;
+  return `${date.toLocaleDateString("es-ES", { weekday: "short" })} ${time}`;
 }
 export function errorMessage(error: unknown) {
   const text = error instanceof Error ? error.message : String(error);
-  const cause = text.split("Caused by:").pop()?.trim();
-  return (cause || text).replace(/^(java\.lang\.\w+|Error):\s*/, "");
+  if (text.includes("Reserva con al menos 72 horas"))
+    return "Reserva con al menos 72 horas de antelación a medianoche.";
+  if (text.includes("Activa primero Concentración")) return "Activa primero Concentración.";
+  return "No se ha podido completar la acción. Revisa los permisos e inténtalo de nuevo.";
 }

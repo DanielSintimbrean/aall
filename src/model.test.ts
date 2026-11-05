@@ -25,11 +25,11 @@ describe("phone configuration", () => {
 
 describe("screen labels", () => {
   it("names common day sets and truncates long schedules", () => {
-    expect(daysLabel([1, 2, 3, 4, 5, 6, 7])).toBe("Every day");
-    expect(daysLabel([5, 4, 3, 2, 1])).toBe("Weekdays");
-    expect(daysLabel([1, 3])).toBe("Mon, Wed");
+    expect(daysLabel([1, 2, 3, 4, 5, 6, 7])).toBe("Todos los días");
+    expect(daysLabel([5, 4, 3, 2, 1])).toBe("De lunes a viernes");
+    expect(daysLabel([1, 3])).toBe("lun, mié");
     const w = { start: "09:00", end: "10:00", days: [1] };
-    expect(windowsLabel([w, w, w])).toBe("09:00–10:00 · +2 more");
+    expect(windowsLabel([w, w, w])).toBe("09:00–10:00 · +2 más");
   });
   it("treats an end at or before the start as overnight", () => {
     expect(isOvernight({ start: "22:30", end: "07:00", days: [1] })).toBe(true);
@@ -42,14 +42,16 @@ describe("screen labels", () => {
   it("omits the weekday for clock times today", () => {
     const now = new Date(2026, 10, 4, 12).getTime();
     expect(clockLabel(new Date(2026, 10, 4, 19).getTime(), now)).toBe("19:00");
-    expect(clockLabel(new Date(2026, 10, 5, 7).getTime(), now)).toBe("Thu 07:00");
+    expect(clockLabel(new Date(2026, 10, 5, 7).getTime(), now)).toBe("jue 07:00");
   });
   it("shows the cause of a native failure", () => {
     const failure = Error(
-      "Calling the 'bookDay' function has failed\n→ Caused by: java.lang.IllegalArgumentException: Book at least 72 elapsed hours before midnight.",
+      "Calling the 'bookDay' function has failed\n→ Caused by: java.lang.IllegalArgumentException: Reserva con al menos 72 horas de antelación a medianoche.",
     );
-    expect(errorMessage(failure)).toBe("Book at least 72 elapsed hours before midnight.");
-    expect(errorMessage(Error("Plain"))).toBe("Plain");
+    expect(errorMessage(failure)).toBe("Reserva con al menos 72 horas de antelación a medianoche.");
+    expect(errorMessage(Error("Plain"))).toBe(
+      "No se ha podido completar la acción. Revisa los permisos e inténtalo de nuevo.",
+    );
   });
   it("keeps a time inside the hour skipped by a clock change", () => {
     const zone = process.env.TZ;

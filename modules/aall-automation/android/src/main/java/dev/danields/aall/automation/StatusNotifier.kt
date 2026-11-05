@@ -38,8 +38,8 @@ class StatusNotifier(private val context: Context, private val prefs: SharedPref
 
   /** Android only honors the bypass for apps with DND access. Focus and Bedtime need that access to turn DND on, and without the bypass aall's own DND rule hides this notification. */
   private fun channel() =
-    NotificationChannel(CHANNEL, "Status", NotificationManager.IMPORTANCE_LOW).apply {
-      description = "Which routines are active and when they end."
+    NotificationChannel(CHANNEL, "Estado", NotificationManager.IMPORTANCE_LOW).apply {
+      description = "Rutinas activas y cuándo terminan."
       setBypassDnd(true)
       setShowBadge(false)
     }

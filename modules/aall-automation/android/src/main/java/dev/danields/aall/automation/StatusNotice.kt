@@ -11,13 +11,18 @@ data class StatusNotice(val title: String, val text: String, val countdownTo: Lo
   val key get() = "$title|$text|${countdownTo?.let { (it + 2500) / 5000 }}"
 
   companion object {
-    private val time = DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH)
+    private val time = DateTimeFormatter.ofPattern("HH:mm", Locale.forLanguageTag("es-ES"))
 
     fun of(d: Decision, clock: Clock, failures: List<String> = emptyList()): StatusNotice? {
-      if (d.dayOff) return StatusNotice("Day off", "All restrictions are off until midnight.")
+      if (d.dayOff) {
+        return StatusNotice(
+          "Día libre",
+          "Todas las restricciones están suspendidas hasta medianoche."
+        )
+      }
       if (d.pauseRemaining > 0) {
         val until = clock.wall + d.pauseRemaining
-        return StatusNotice("Paused", "Restrictions resume afterward.", until)
+        return StatusNotice("En pausa", "Las restricciones se reanudarán al terminar.", until)
       }
       if (d.routines.isEmpty()) return null
       val focusFirst = d.routines.sortedBy { it.kind != RoutineKind.FOCUS }
@@ -25,7 +30,7 @@ data class StatusNotice(val title: String, val text: String, val countdownTo: Lo
       val problems = (failures + d.errors).joinToString(" ")
       val names = focusFirst.joinToString { it.title }
       return StatusNotice(
-        title = if (problems.isEmpty()) names else "$names · needs setup",
+        title = if (problems.isEmpty()) names else "$names · requiere configuración",
         text = problems.ifEmpty { nextChange(d.nextChange, clock) },
         countdownTo = (clock.wall + d.focusRemaining).takeIf { focusRunning }
       )
@@ -39,7 +44,7 @@ data class StatusNotice(val title: String, val text: String, val countdownTo: Lo
       ) {
         ""
       } else {
-        "Next change at " + local.format(time)
+        "Próximo cambio a las " + local.format(time)
       }
     }
   }

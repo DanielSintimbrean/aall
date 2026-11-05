@@ -310,7 +310,7 @@ export function SearchInput({
       {!!value && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Clear search"
+          accessibilityLabel="Borrar búsqueda"
           hitSlop={8}
           onPress={() => onChangeText("")}
           className="h-10 w-10 items-center justify-center"
@@ -337,7 +337,7 @@ function PickerField({
     <View className="flex-1 overflow-hidden rounded-2xl">
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}, ${value}. Change`}
+        accessibilityLabel={`${label}, ${value}. Cambiar`}
         android_ripple={ripple}
         onPress={onPress}
         className="min-h-[72px] justify-center rounded-2xl bg-raised px-4 py-2"
@@ -369,6 +369,8 @@ export function TimeField({
       onPress={() =>
         DateTimePickerAndroid.open({
           mode: "time",
+          positiveButton: { label: "Aceptar" },
+          negativeButton: { label: "Cancelar" },
           is24Hour: true,
           value: timeToDate(value),
           onValueChange: (_, date) => onChange(dateToTime(date)),
@@ -399,6 +401,8 @@ export function DateField({
       onPress={() =>
         DateTimePickerAndroid.open({
           mode: "date",
+          positiveButton: { label: "Aceptar" },
+          negativeButton: { label: "Cancelar" },
           value: parseDate(value) ?? new Date(),
           minimumDate: parseDate(minimum) ?? undefined,
           firstDayOfWeek: 1,
@@ -462,7 +466,7 @@ export function Stepper({
   );
   return (
     <View className="flex-row items-center gap-2">
-      {button("minus", "5 minutes less", -5)}
+      {button("minus", "5 minutos menos", -5)}
       <View
         className={`h-14 flex-1 flex-row items-center justify-center gap-1 rounded-2xl border-2 bg-raised ${error ? "border-danger" : "border-transparent"}`}
       >
@@ -478,7 +482,7 @@ export function Stepper({
         />
         <Text className="text-base text-muted">min</Text>
       </View>
-      {button("plus", "5 minutes more", 5)}
+      {button("plus", "5 minutos más", 5)}
     </View>
   );
 }

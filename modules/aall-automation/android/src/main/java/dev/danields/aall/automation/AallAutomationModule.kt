@@ -16,6 +16,10 @@ class AallAutomationModule : Module() {
 
   override fun definition() = ModuleDefinition {
     Name("AallAutomation")
+    OnCreate {
+      context.getSystemService(android.app.LocaleManager::class.java).applicationLocales =
+        android.os.LocaleList.forLanguageTags("es-ES")
+    }
     Function("initialize") { raw: String -> Engine(context).initialize(raw) }
     Function("getSnapshot") { Engine(context).snapshot().toString() }
     Function("reconcile") { Engine(context).reconcile() }

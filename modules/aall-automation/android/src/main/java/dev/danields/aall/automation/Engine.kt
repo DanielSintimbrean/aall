@@ -77,7 +77,7 @@ class Engine(private val context: Context) {
   fun book(date: String) = update { state ->
     val clock = clock()
     require(Rules.canBook(date, clock.wall, clock.zone)) {
-      "Book at least 72 elapsed hours before midnight."
+      "Reserva con al menos 72 horas de antelación a medianoche."
     }
     state.copy(daysOff = (state.daysOff + date).distinct())
   }
@@ -89,7 +89,7 @@ class Engine(private val context: Context) {
       state.config.routines.any {
         it.kind == RoutineKind.FOCUS && it.enabled
       }
-    ) { "Enable Focus first." }
+    ) { "Activa primero Concentración." }
     state.copy(
       timers =
         state.timers + (Timer.FOCUS to Timer.start(clock(), state.config.focusMinutes * 60000L))
@@ -135,14 +135,16 @@ class Engine(private val context: Context) {
         applyDnd(wanted)
         store.save(decision.state, decision.state.copy(dndOwned = wanted))
       } catch (ex: Exception) {
-        failures.add("DND: ${ex.message}")
+        android.util.Log.e("AallAutomation", "Failed to change DND", ex)
+        failures.add("No se ha podido cambiar No molestar.")
       }
     }
     decision.setGrayscale?.let { wanted ->
       try {
         applyGrayscale(wanted)
       } catch (ex: Exception) {
-        failures.add("Grayscale: ${ex.message}")
+        android.util.Log.e("AallAutomation", "Failed to change grayscale", ex)
+        failures.add("No se ha podido cambiar la escala de grises.")
       }
     }
     AallAccessibilityService.instance?.update(decision)
@@ -150,7 +152,8 @@ class Engine(private val context: Context) {
     try {
       status.show(StatusNotice.of(decision, env.clock, failures))
     } catch (ex: Exception) {
-      failures.add("Notification: ${ex.message}")
+      android.util.Log.e("AallAutomation", "Failed to show status notification", ex)
+      failures.add("No se ha podido mostrar la notificación.")
     }
     put("effectFailures", JSONArray(failures).toString())
   }

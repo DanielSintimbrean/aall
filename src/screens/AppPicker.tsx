@@ -21,7 +21,10 @@ export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
   useEffect(() => {
     if (routineId)
       navigation.setOptions({
-        title: list === "colorApps" ? "Keep color in" : `${editors[routineId].appList} apps`,
+        title:
+          list === "colorApps"
+            ? "Conservar el color en"
+            : `Aplicaciones ${editors[routineId].appList === "allowed" ? "permitidas" : "bloqueadas"}`,
       });
   }, [navigation, list, routineId]);
   // Ordered once on open, so a row doesn't jump away from the finger when it is toggled.
@@ -45,7 +48,7 @@ export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
   return (
     <KeyboardScreen>
       <View className="px-4 pb-2 pt-2">
-        <SearchInput value={query} onChangeText={setQuery} placeholder="Search apps" />
+        <SearchInput value={query} onChangeText={setQuery} placeholder="Buscar aplicaciones" />
       </View>
       <FlatList
         className="flex-1"
@@ -56,7 +59,7 @@ export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
         getItemLayout={(_, index) => ({ length: rowHeight, offset: rowHeight * index, index })}
         ListEmptyComponent={
           <Text className="px-4 py-10 text-center text-base text-muted">
-            No apps match "{query}".
+            No hay aplicaciones que coincidan con "{query}".
           </Text>
         }
         renderItem={({ item }) => {
@@ -101,7 +104,10 @@ export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
         }}
       />
       <BottomBar>
-        <Button title={`Done · ${selected.length} selected`} onPress={() => navigation.goBack()} />
+        <Button
+          title={`Listo · ${selected.length} seleccionadas`}
+          onPress={() => navigation.goBack()}
+        />
       </BottomBar>
     </KeyboardScreen>
   );

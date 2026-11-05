@@ -42,29 +42,43 @@ function hero(state: Snapshot, now: number) {
     .map((r) => r.title);
   const next = new Date(state.nextChange);
   const meaningfulNext = next.getHours() + next.getMinutes() > 0;
-  const nextLine = meaningfulNext ? `Next change at ${clockLabel(state.nextChange, now)}` : "";
+  const nextLine = meaningfulNext
+    ? `Próximo cambio a las ${clockLabel(state.nextChange, now)}`
+    : "";
   if (state.dayOff)
-    return { title: "Day off", detail: "All restrictions are off until midnight.", on: false };
+    return {
+      title: "Día libre",
+      detail: "Todas las restricciones están suspendidas hasta medianoche.",
+      on: false,
+    };
   const paused = minutesLeft(state.pauseUntil, now);
   if (paused)
-    return { title: "Paused", detail: `Restrictions resume in ${paused} min.`, on: false };
+    return {
+      title: "En pausa",
+      detail: `Las restricciones se reanudan en ${paused} min.`,
+      on: false,
+    };
   const focus = focusMinutesLeft(state, now);
-  if (focus) return { title: `Focus · ${focus} min left`, detail: nextLine, on: true };
+  if (focus) return { title: `Concentración · quedan ${focus} min`, detail: nextLine, on: true };
   if (titles.length) return { title: titles.join(", "), detail: nextLine, on: true };
   if (!state.config.routines.some((r) => r.enabled))
-    return { title: "All routines off", detail: "Turn one on below to get started.", on: false };
-  return { title: "Time is yours", detail: nextLine, on: false };
+    return {
+      title: "Todas las rutinas desactivadas",
+      detail: "Activa una rutina para empezar.",
+      on: false,
+    };
+  return { title: "El tiempo es tuyo", detail: nextLine, on: false };
 }
 
 function routineDetail(routine: Routine, state: Snapshot, now: number) {
   const editor = editors[routine.id];
   const turningOff = state.turningOff[routine.id];
-  const off = turningOff ? ` · off ${clockLabel(turningOff, now)}` : "";
+  const off = turningOff ? ` · se desactiva el ${clockLabel(turningOff, now)}` : "";
   if (editor.session)
-    return `${state.config.focusMinutes} min · ${routine.apps.length} apps blocked${off}`;
+    return `${state.config.focusMinutes} min · ${routine.apps.length} aplicaciones bloqueadas${off}`;
   const hours = `${editor.cardPrefix ?? ""}${windowsLabel(routine.windows)}`;
   const days = routine.windows.length === 1 ? ` · ${daysLabel(routine.windows[0].days)}` : "";
-  return `${hours}${days}${state.overrides[routine.id] ? " · only today" : ""}${off}`;
+  return `${hours}${days}${state.overrides[routine.id] ? " · solo hoy" : ""}${off}`;
 }
 
 export function Today({ navigation }: ScreenProps<"Today">) {
@@ -104,13 +118,13 @@ export function Today({ navigation }: ScreenProps<"Today">) {
           focusRoutine &&
           (focusRoutine.enabled ? (
             <Button
-              title={`Start focus · ${state.config.focusMinutes} min`}
+              title={`Iniciar concentración · ${state.config.focusMinutes} min`}
               icon="play"
               onPress={() => act(() => native!.startFocus())}
             />
           ) : (
             <Button
-              title="Set up focus"
+              title="Configurar concentración"
               variant="secondary"
               icon="target"
               onPress={() => open(focusRoutine)}
@@ -124,7 +138,7 @@ export function Today({ navigation }: ScreenProps<"Today">) {
         </Notice>
       ))}
 
-      <Section title="Routines">
+      <Section title="Rutinas">
         <Card>
           {routines.map((routine, index) => (
             <View key={routine.id}>
@@ -141,12 +155,12 @@ export function Today({ navigation }: ScreenProps<"Today">) {
         </Card>
       </Section>
 
-      <Section title="More">
+      <Section title="Más">
         <Card>
           <Row
             icon="calendar-heart"
-            title="Days off"
-            subtitle={upcoming[0] ? `Next: ${dateLabel(upcoming[0])}` : "None booked"}
+            title="Días libres"
+            subtitle={upcoming[0] ? `Próximo: ${dateLabel(upcoming[0])}` : "Sin reservas"}
             onPress={() => navigation.navigate("DaysOff")}
           />
           <Divider />
@@ -154,8 +168,8 @@ export function Today({ navigation }: ScreenProps<"Today">) {
             <>
               <Row
                 icon="pause-circle-outline"
-                title="Pause for 15 minutes"
-                subtitle="Solve a sum to lift all restrictions"
+                title="Pausar durante 15 minutos"
+                subtitle="Resuelve una suma para suspender todas las restricciones"
                 onPress={() => navigation.navigate("Bypass")}
               />
               <Divider />
@@ -163,11 +177,11 @@ export function Today({ navigation }: ScreenProps<"Today">) {
           )}
           <Row
             icon="cellphone-cog"
-            title="Phone setup"
+            title="Configuración del teléfono"
             subtitle={
               missing
-                ? `${missing} permission${missing > 1 ? "s" : ""} missing`
-                : "All permissions granted"
+                ? `${missing} permiso${missing > 1 ? "s" : ""} sin conceder`
+                : "Todos los permisos concedidos"
             }
             trailing={
               missing ? <Icon name="alert-circle-outline" color={colors.warn} /> : undefined

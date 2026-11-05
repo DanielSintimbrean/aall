@@ -156,11 +156,11 @@ class ReconcileTest {
     assertNull(d.setGrayscale)
     assertEquals(
       listOf(
-        "App blocking needs accessibility access.",
-        "DND access missing.",
-        "Color exceptions need accessibility access.",
-        "Grayscale needs the ADB grant.",
-        "Exact alarm access missing; changes may be delayed."
+        "El bloqueo de aplicaciones necesita el permiso de accesibilidad.",
+        "Falta el permiso de No molestar.",
+        "Las excepciones de color necesitan el permiso de accesibilidad.",
+        "La escala de grises necesita el permiso mediante ADB.",
+        "Falta el permiso de alarmas exactas; los cambios pueden retrasarse."
       ),
       d.errors
     )
@@ -444,7 +444,7 @@ class ReconcileTest {
 
   @Test fun noticeNamesRunningRoutinesAndNextChange() {
     assertEquals(
-      StatusNotice("grayscale", "Next change at 18:00"),
+      StatusNotice("grayscale", "Próximo cambio a las 18:00"),
       notice(state(grayscaleDaytime), clock("2026-11-02T12:00:00"))
     )
   }
@@ -482,7 +482,7 @@ class ReconcileTest {
       Timer.PAUSE to Timer.start(now, 900000)
     )
     val paused = notice(state(routine(RoutineKind.FOCUS)) { copy(timers = timers) }, now)!!
-    assertEquals("Paused", paused.title)
+    assertEquals("En pausa", paused.title)
     assertEquals(now.wall + 900000, paused.countdownTo)
     val off = notice(
       state(routine(RoutineKind.FOCUS)) {
@@ -490,15 +490,21 @@ class ReconcileTest {
       },
       now
     )!!
-    assertEquals(StatusNotice("Day off", "All restrictions are off until midnight."), off)
+    assertEquals(
+      StatusNotice("Día libre", "Todas las restricciones están suspendidas hasta medianoche."),
+      off
+    )
   }
 
   @Test fun noticeDoesNotClaimProtectionWhenARoutineCannotRun() {
     val now = clock("2026-11-02T23:00:00")
     val missing = notice(state(bedtime), now, permissions = allow.copy(dnd = false))!!
-    assertEquals(StatusNotice("bedtime · needs setup", "DND access missing."), missing)
+    assertEquals(
+      StatusNotice("bedtime · requiere configuración", "Falta el permiso de No molestar."),
+      missing
+    )
     val failed = notice(state(bedtime), now, failures = listOf("DND: refused"))!!
-    assertEquals(StatusNotice("bedtime · needs setup", "DND: refused"), failed)
+    assertEquals(StatusNotice("bedtime · requiere configuración", "DND: refused"), failed)
   }
 
   @Test fun noticeKeyIgnoresDeadlineJitterButNotAMovedDeadline() {

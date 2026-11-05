@@ -15,14 +15,14 @@ export function DaysOff() {
   const alreadyBooked = booked.includes(date);
   const cancel = (day: string) =>
     Alert.alert(
-      `Cancel ${dateLabel(day)}?`,
+      `¿Cancelar el ${dateLabel(day)}?`,
       day >= earliest
-        ? "You can book it again while it's still 72 hours away."
-        : "It's less than 72 hours away, so you won't be able to book it again.",
+        ? "Puedes volver a reservarlo mientras falten al menos 72 horas."
+        : "Faltan menos de 72 horas, así que no podrás volver a reservarlo.",
       [
-        { text: "Keep booking", style: "cancel" },
+        { text: "Mantener reserva", style: "cancel" },
         {
-          text: "Cancel day off",
+          text: "Cancelar día libre",
           style: "destructive",
           onPress: () => act(() => native!.cancelDay(day)),
         },
@@ -31,32 +31,35 @@ export function DaysOff() {
   return (
     <Page>
       <Text className="px-1 text-base leading-6 text-muted">
-        Restrictions pause from midnight to midnight. Book at least 72 hours ahead.
+        Las restricciones se suspenden de medianoche a medianoche. Reserva con al menos 72 horas de
+        antelación.
       </Text>
-      <Section title="Book a day">
+      <Section title="Reservar un día">
         <Card className="gap-3 p-4">
           <View className="flex-row">
             <DateField
-              label="Date"
+              label="Fecha"
               value={date}
               display={dateLabel(date)}
               minimum={earliest}
               onChange={setDate}
             />
           </View>
-          <Text className="px-1 text-sm text-muted">Earliest available: {dateLabel(earliest)}</Text>
+          <Text className="px-1 text-sm text-muted">
+            Primera fecha disponible: {dateLabel(earliest)}
+          </Text>
           <Button
-            title={alreadyBooked ? "Already booked" : "Book day off"}
+            title={alreadyBooked ? "Ya reservado" : "Reservar día libre"}
             icon="calendar-plus"
             disabled={alreadyBooked}
             onPress={() => {
               if (act(() => native!.bookDay(date)))
-                ToastAndroid.show(`Booked ${dateLabel(date)}`, ToastAndroid.SHORT);
+                ToastAndroid.show(`Reservado el ${dateLabel(date)}`, ToastAndroid.SHORT);
             }}
           />
         </Card>
       </Section>
-      <Section title="Booked">
+      <Section title="Reservas">
         {booked.length ? (
           <Card>
             {booked.map((day, index) => (
@@ -65,16 +68,16 @@ export function DaysOff() {
                 <Row
                   icon="calendar-check"
                   title={dateLabel(day)}
-                  subtitle={day === today ? "Today" : undefined}
+                  subtitle={day === today ? "Hoy" : undefined}
                   trailing={
-                    <Button title="Cancel" variant="danger" compact onPress={() => cancel(day)} />
+                    <Button title="Cancelar" variant="danger" compact onPress={() => cancel(day)} />
                   }
                 />
               </View>
             ))}
           </Card>
         ) : (
-          <Notice icon="calendar-blank-outline">No days off booked.</Notice>
+          <Notice icon="calendar-blank-outline">No hay días libres reservados.</Notice>
         )}
       </Section>
     </Page>

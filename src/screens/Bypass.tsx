@@ -14,7 +14,7 @@ export function Bypass({ navigation }: ScreenProps<"Bypass">) {
   const check = () =>
     act(() => {
       if (native!.solve(answer)) {
-        ToastAndroid.show("Paused for 15 minutes", ToastAndroid.SHORT);
+        ToastAndroid.show("Restricciones pausadas durante 15 minutos", ToastAndroid.SHORT);
         navigation.popTo("Today");
       } else setWrong(true);
     });
@@ -26,19 +26,22 @@ export function Bypass({ navigation }: ScreenProps<"Bypass">) {
         keyboardShouldPersistTaps="handled"
       >
         <Text className="px-1 text-base leading-6 text-muted">
-          The right answer lifts all restrictions for 15 minutes. Current routines resume afterward.
+          La respuesta correcta suspende todas las restricciones durante 15 minutos. Después se
+          reanudan las rutinas.
         </Text>
         <Card className="items-center px-4 py-8">
           <Text className="text-center text-4xl font-bold text-ink">{expression}</Text>
         </Card>
         <View>
           <Input
-            label="Answer"
+            label="Respuesta"
             autoFocus
             keyboardType="numeric"
             returnKeyType="done"
             value={answer}
-            error={wrong ? "Not quite. The sum stays the same until you solve it." : undefined}
+            error={
+              wrong ? "Respuesta incorrecta. La suma no cambia hasta que la resuelvas." : undefined
+            }
             onChangeText={(value) => {
               setAnswer(value);
               setWrong(false);
@@ -48,7 +51,7 @@ export function Bypass({ navigation }: ScreenProps<"Bypass">) {
         </View>
       </ScrollView>
       <BottomBar>
-        <Button title="Check answer" disabled={!answer.trim()} onPress={check} />
+        <Button title="Comprobar respuesta" disabled={!answer.trim()} onPress={check} />
       </BottomBar>
     </KeyboardScreen>
   );

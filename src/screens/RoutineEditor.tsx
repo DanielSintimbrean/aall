@@ -36,7 +36,7 @@ import {
 const focusPresets = [25, 50, 90];
 
 function appNames(packages: string[], apps: InstalledApp[]) {
-  if (!packages.length) return "None";
+  if (!packages.length) return "Ninguna";
   const names = packages.map(
     (pkg) => apps.find((app) => app.packageName === pkg)?.label ?? pkg.split(".").pop(),
   );
@@ -68,7 +68,7 @@ function HoursCard({
         {removable && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Remove ${noun.toLowerCase()} ${index + 1}`}
+            accessibilityLabel={`Eliminar ${noun.toLowerCase()} ${index + 1}`}
             hitSlop={4}
             onPress={() => dispatch({ type: "removeWindow", index })}
             className="h-10 w-10 items-center justify-center"
@@ -79,12 +79,12 @@ function HoursCard({
       </View>
       <View className="flex-row gap-2">
         <TimeField
-          label="Start"
+          label="Inicio"
           value={window.start}
           onChange={(start) => dispatch({ type: "setWindowTime", index, time: { start } })}
         />
         <TimeField
-          label={isOvernight(window) ? "End · next day" : "End"}
+          label={isOvernight(window) ? "Fin · día siguiente" : "Fin"}
           value={window.end}
           onChange={(end) => dispatch({ type: "setWindowTime", index, time: { end } })}
         />
@@ -93,7 +93,7 @@ function HoursCard({
         days={window.days}
         onToggle={(day) => dispatch({ type: "toggleWindowDay", index, day })}
       />
-      {!window.days.length && <FieldError>Pick at least one day.</FieldError>}
+      {!window.days.length && <FieldError>Selecciona al menos un día.</FieldError>}
     </Card>
   );
 }
@@ -103,9 +103,9 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
   const { draft, original, dispatch } = useDraft();
   const [saved, setSaved] = useState(false);
   usePreventRemove(isDirty(draft, original) && !saved, ({ data }) => {
-    Alert.alert("Discard changes?", "Your changes to this routine haven't been saved.", [
-      { text: "Keep editing", style: "cancel" },
-      { text: "Discard", style: "destructive", onPress: () => navigation.dispatch(data.action) },
+    Alert.alert("¿Descartar los cambios?", "Los cambios de esta rutina no se han guardado.", [
+      { text: "Seguir editando", style: "cancel" },
+      { text: "Descartar", style: "destructive", onPress: () => navigation.dispatch(data.action) },
     ]);
   });
   useEffect(() => {
@@ -120,12 +120,12 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
   const setEnabled = (enabled: boolean) => {
     if (enabled || !weeklyOn) return dispatch({ type: "setEnabled", enabled });
     Alert.alert(
-      `Turn off ${routine.title}?`,
-      "It keeps following its schedule for 72 hours, then turns off. You can cancel until then. This starts now and doesn't save other changes here.",
+      `¿Desactivar ${routine.title}?`,
+      "La rutina seguirá su horario durante 72 horas y después se desactivará. Puedes cancelar la solicitud hasta entonces. El plazo empieza ahora y no guarda los demás cambios de esta pantalla.",
       [
-        { text: "Keep on", style: "cancel" },
+        { text: "Mantener activada", style: "cancel" },
         {
-          text: "Start 72 hours",
+          text: "Iniciar plazo de 72 horas",
           style: "destructive",
           onPress: () => act(() => native!.requestTurnOff(routine.id)),
         },
@@ -146,7 +146,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
       saveWeekly(routine);
     });
     if (!done) return;
-    ToastAndroid.show(today ? "Applied for today" : "Saved", ToastAndroid.SHORT);
+    ToastAndroid.show(today ? "Aplicado para hoy" : "Guardado", ToastAndroid.SHORT);
     setSaved(true);
   };
   return (
@@ -154,12 +154,12 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
       <Page bare>
         <Card>
           <Row
-            title="Enabled"
+            title="Activada"
             subtitle={editor.hint}
             chevron={false}
             trailing={
               <Switch
-                accessibilityLabel="Enabled"
+                accessibilityLabel="Activada"
                 value={routine.enabled}
                 disabled={!!turningOff}
                 onValueChange={setEnabled}
@@ -172,9 +172,9 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
 
         {!!turningOff && (
           <Card className="gap-3 p-4">
-            <Text className="text-base text-ink">Turns off {clockLabel(turningOff)}.</Text>
+            <Text className="text-base text-ink">Se desactivará el {clockLabel(turningOff)}.</Text>
             <Button
-              title="Keep on"
+              title="Mantener activada"
               variant="secondary"
               onPress={() => act(() => native!.cancelTurnOff(routine.id))}
             />
@@ -183,13 +183,13 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
 
         {overridden && (
           <Notice icon="calendar-today">
-            Showing today's hours. Save weekly to keep them every week and end the only-today
-            change.
+            Se muestra el horario de hoy. Guarda el horario semanal para repetirlo cada semana y
+            eliminar el cambio de solo hoy.
           </Notice>
         )}
 
         {editor.session && (
-          <Section title="Duration">
+          <Section title="Duración">
             <Card className="gap-3 p-4">
               <View accessibilityRole="radiogroup" className="flex-row gap-2">
                 {focusPresets.map((preset) => (
@@ -202,19 +202,19 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
                 ))}
               </View>
               <Stepper
-                label="Focus duration in minutes"
+                label="Duración de la concentración en minutos"
                 value={minutes}
                 error={parsedMinutes === null}
                 onChange={(value) => dispatch({ type: "setMinutes", value })}
                 onStep={(by) => dispatch({ type: "stepMinutes", by })}
               />
-              {parsedMinutes === null && <FieldError>Choose 1 to 1440 minutes.</FieldError>}
+              {parsedMinutes === null && <FieldError>Elige entre 1 y 1440 minutos.</FieldError>}
             </Card>
           </Section>
         )}
 
         {!editor.session && (
-          <Section title="Schedule">
+          <Section title="Horario">
             {routine.windows.map((window, index) => (
               <HoursCard
                 key={index}
@@ -230,7 +230,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
             )}
             {editor.windowCountEditable && (
               <Button
-                title="Add hours"
+                title="Añadir horario"
                 variant="outline"
                 icon="plus"
                 onPress={() => dispatch({ type: "addWindow" })}
@@ -240,30 +240,31 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
         )}
 
         {editor.chargingStart && (
-          <Section title="Early start when charging">
+          <Section title="Inicio anticipado al cargar">
             <Card className="gap-3 p-4">
               <TimeField
-                label="Plugging in starts bedtime after"
+                label="Al conectar el cargador, el descanso comienza a partir de"
                 value={routine.earlyStart}
                 onChange={(earlyStart) => dispatch({ type: "setEarlyStart", earlyStart })}
               />
               {earlyStartInvalid ? (
-                <FieldError>Choose {earliestChargingStart} or later.</FieldError>
+                <FieldError>Elige las {earliestChargingStart} o una hora posterior.</FieldError>
               ) : (
                 <Text className="px-1 text-sm text-muted">
-                  {earliestChargingStart} or later. Unplugging doesn't cancel bedtime.
+                  A partir de las {earliestChargingStart}. Desconectar el cargador no cancela el
+                  descanso.
                 </Text>
               )}
             </Card>
           </Section>
         )}
 
-        <Section title="Apps">
+        <Section title="Aplicaciones">
           <Card>
             {editor.appList && (
               <Row
-                icon={editor.appList === "Allowed" ? "check-circle-outline" : "cancel"}
-                title={`${editor.appList} apps`}
+                icon={editor.appList === "allowed" ? "check-circle-outline" : "cancel"}
+                title={`Aplicaciones ${editor.appList === "allowed" ? "permitidas" : "bloqueadas"}`}
                 subtitle={appNames(routine.apps, apps)}
                 onPress={() => navigation.navigate("AppPicker", { list: "apps" })}
               />
@@ -272,7 +273,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
             {editor.colorExceptions && (
               <Row
                 icon="palette-outline"
-                title="Keep color in"
+                title="Conservar el color en"
                 subtitle={appNames(routine.colorApps, apps)}
                 onPress={() => navigation.navigate("AppPicker", { list: "colorApps" })}
               />
@@ -285,7 +286,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
           {!editor.session && (
             <View className="flex-1">
               <Button
-                title="Only today"
+                title="Solo hoy"
                 variant="secondary"
                 disabled={!canSaveToday}
                 onPress={() => save(true)}
@@ -294,7 +295,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
           )}
           <View className="flex-1">
             <Button
-              title={editor.session ? "Save" : "Save weekly"}
+              title={editor.session ? "Guardar" : "Guardar semanal"}
               disabled={!canSaveWeekly}
               onPress={() => save(false)}
             />
