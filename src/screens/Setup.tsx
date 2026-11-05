@@ -85,7 +85,7 @@ export function Setup() {
         </Notice>
       )}
       {!granted.grayscale && (
-        <Section title="Conceder permiso de escala de grises mediante ADB">
+        <Section title="Conceder permiso de escala de grises y luz nocturna mediante ADB">
           <Card className="p-4">
             <Text selectable className="font-mono text-sm leading-5 text-ink">
               {adbCommand}

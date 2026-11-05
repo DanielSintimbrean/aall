@@ -77,6 +77,25 @@ class Store(context: Context) {
     check(edit.commit())
   }
 
+  fun nightLightSessionJson(s: NightLightSession) = JSONObject()
+    .put("before", nightLightJson(s.before))
+    .put("startTemperature", s.startTemperature)
+    .put("wrote", nightLightJson(s.wrote))
+    .put("yielded", s.yielded)
+
+  fun parseNightLightSession(o: JSONObject) = NightLightSession(
+    parseNightLight(o.getJSONObject("before")),
+    o.getInt("startTemperature"),
+    parseNightLight(o.getJSONObject("wrote")),
+    o.getBoolean("yielded")
+  )
+
+  private fun nightLightJson(s: NightLightSettings) = JSONObject()
+    .put("activated", s.activated).put("temperature", s.temperature).put("autoMode", s.autoMode)
+
+  private fun parseNightLight(o: JSONObject) =
+    NightLightSettings(o.getInt("activated"), o.getInt("temperature"), o.getInt("autoMode"))
+
   private val timerKeys =
     listOf(Timer.FOCUS, Timer.PAUSE, Timer.GRAY_TEST) + RoutineKind.entries.map(Timer::turnOff)
 

@@ -4,7 +4,7 @@
 
 Personal Android automation app with fixed automation types in code. Daily use means adjusting hours, weekdays, and app lists directly on the phone. No generic rule builder, accounts, server, or external configuration files.
 
-The first release contains scheduled app blocking, manually started focus sessions, bedtime, and scheduled grayscale. Other my-tasker features are deferred.
+The first release contains scheduled app blocking, manually started focus sessions, bedtime, scheduled grayscale, and a Night Light ramp. Other my-tasker features are deferred.
 
 It also includes scheduled days off without restrictions. A day off must be booked at least 72 hours before the day begins.
 
@@ -38,6 +38,7 @@ Seed the scoped features from my-tasker without requiring a runtime connection t
 - Bedtime: 22:30 to 07:00 every day. Earliest charging-triggered bedtime: 20:00. Bedtime requests DND, grayscale, and blocks apps outside its allowed list.
 - Scheduled app access: 12:30 to 13:15 and 19:00 to 20:00 every day. Selected apps are blocked outside those windows; focus or bedtime can still block them inside a window.
 - Grayscale: weekdays 09:00 to 13:00 and 14:00 to 18:00; daily 21:00 to 07:00. Camera, Photos, and Maps retain color while foregrounded.
+- Night Light: 21:00 to 07:00 every day, a 90-minute ramp up to 50% intensity. The ramp finishes when the default bedtime starts, and 50% is about 2384 K on the Pixel 8 Pro, close to the 2327 K the phone was already set to.
 - Reuse the relevant my-tasker app selections as initial suggestions, matched against installed packages. App lists remain editable on the phone.
 - Initial routines are disabled until the user enables them and grants their required access.
 
@@ -62,6 +63,21 @@ The schedule editor explicitly labels app windows as "Allowed hours" and graysca
 - mise pins development tools. Pin package dependencies after checking current compatibility.
 - Persist adjustments locally. Use Android scheduling and persisted native-readable routine state so execution does not depend on the React UI staying open.
 - No Tasker, legacy helper, or Shizuku dependency is assumed.
+
+## Night Light behavior
+
+- The routine controls Android's own Night Light through `night_display_activated`, `night_display_color_temperature` and `night_display_auto_mode`, using the same one-time ADB grant as grayscale.
+- It has one window. The ramp starts when the window starts, and the routine releases the filter when the window ends. Intensity uses the scale of Android's slider: 0% is the device's highest temperature limit and 100% its lowest. Limits come from the device's `config_nightDisplayColorTemperatureMin` and `Max`.
+- It isn't a restriction. A pause or a day off doesn't release it, and turning it off needs no 72-hour notice. "Only today" can turn it off.
+- Writing the temperature doesn't change the filter on Android 17, even though the setting and `dumpsys color_display` report the new value. Android recomputes its matrix when color correction is switched, so each temperature write also toggles `accessibility_display_daltonizer_enabled`. `display_color_mode` does the same but is private to apps. Toggling switches the display's color mode for a moment, and with grayscale on it leaves grayscale for a moment.
+- The temperature follows the wall clock from the window's start, written every minute. Late steps only make the next change bigger, so a restart, Doze or a closed app can't shift the ramp. Starting inside a window goes straight to the temperature for that moment.
+- Steps use a non-wakeup alarm, so the ramp doesn't wake a sleeping phone. The first step after waking catches up. The window's start and end still use the normal waking alarm.
+- Android's weakest Night Light is already warm, so turning on is a small visible change. Android fades that change in.
+- While running, the routine turns off Android's own Night Light schedule, which could otherwise switch the filter off in the middle of a window.
+- A filter that's already on when the window starts sets the ramp's starting point, and the ramp never makes it weaker.
+- Changing the filter, its temperature or the schedule during a window hands control back until the window ends.
+- At the end, aall restores each setting that still holds what aall wrote. It restores the schedule last, so Android decides whether the filter belongs on at that time. The earlier values are stored in native preferences, so this survives a restart.
+- Force-stopping aall stops its alarms until the next launch, like every other routine. Android's schedule stays off until then.
 
 ## Day-off behavior
 

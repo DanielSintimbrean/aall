@@ -147,8 +147,18 @@ class Engine(private val context: Context) {
         failures.add("No se ha podido cambiar la escala de grises.")
       }
     }
+    var nightLightStep: Long? = null
+    if (env.permissions.grayscale) {
+      try {
+        nightLightStep = applyNightLight(decision.nightLight, env.clock.wall)
+      } catch (ex: Exception) {
+        android.util.Log.e("AallAutomation", "Failed to change Night Light", ex)
+        failures.add("No se ha podido cambiar la luz nocturna.")
+      }
+    }
     AallAccessibilityService.instance?.update(decision)
     scheduleAlarm(decision.nextChange)
+    scheduleNightLightStep(nightLightStep)
     try {
       status.show(StatusNotice.of(decision, env.clock, failures))
     } catch (ex: Exception) {
@@ -191,7 +201,7 @@ class Engine(private val context: Context) {
     }
   )
 
-  private fun applyGrayscale(on: Boolean) {
+  private fun applyGrayscale(on: Boolean) = synchronized(displayLock) {
     val resolver = context.contentResolver
     val enabled = Settings.Secure.getInt(resolver, "accessibility_display_daltonizer_enabled", 0)
     val mode = Settings.Secure.getInt(resolver, "accessibility_display_daltonizer", -1)
@@ -216,6 +226,95 @@ class Engine(private val context: Context) {
         )
       }
       prefs.edit().putBoolean("grayOwned", false).commit()
+    }
+  }
+
+  /** Returns when the ramp next needs a change, or null when it has finished or was taken over. */
+  private fun applyNightLight(ramp: NightLightRamp?, now: Long): Long? = synchronized(displayLock) {
+    val raw = prefs.getString("nightLightSession", null)
+    val session = raw?.let { store.parseNightLightSession(JSONObject(it)) }
+    if (ramp == null && session == null) return null
+    val resolver = context.contentResolver
+    val read = NightLightSettings(
+      Settings.Secure.getInt(resolver, "night_display_activated", 0),
+      Settings.Secure.getInt(resolver, "night_display_color_temperature", -1),
+      Settings.Secure.getInt(resolver, "night_display_auto_mode", -1)
+    )
+    val step = NightLight.advance(session, read, ramp, now, nightLightRange())
+    // Saved before writing and removed after, so a failure can't lose the user's settings.
+    val next = step.session?.let { store.nightLightSessionJson(it).toString() }
+    if (next != null && next != raw) {
+      check(prefs.edit().putString("nightLightSession", next).commit())
+    }
+    // Android reads the schedule last, so restoring it lets Android settle the final state.
+    if (step.settings.temperature != read.temperature) {
+      check(
+        Settings.Secure.putInt(
+          resolver,
+          "night_display_color_temperature",
+          step.settings.temperature
+        )
+      )
+      refreshNightLightMatrix()
+    }
+    if (step.settings.activated != read.activated) {
+      check(Settings.Secure.putInt(resolver, "night_display_activated", step.settings.activated))
+    }
+    if (step.settings.autoMode != read.autoMode) {
+      check(Settings.Secure.putInt(resolver, "night_display_auto_mode", step.settings.autoMode))
+    }
+    if (next == null) check(prefs.edit().remove("nightLightSession").commit())
+    if (ramp == null || step.session?.yielded == true) null else NightLight.nextStep(ramp, now)
+  }
+
+  /**
+   * Android's Night Light ignores a written temperature and keeps the matrix it already has, until
+   * color correction is switched. With correction off, this switches it on with no correction mode
+   * set, so only the matrix changes. With grayscale on, it has to leave grayscale for a moment.
+   */
+  private fun refreshNightLightMatrix() {
+    val resolver = context.contentResolver
+    val enabledKey = "accessibility_display_daltonizer_enabled"
+    val modeKey = "accessibility_display_daltonizer"
+    if (Settings.Secure.getInt(resolver, enabledKey, 0) == 1) {
+      check(Settings.Secure.putInt(resolver, enabledKey, 0))
+      check(Settings.Secure.putInt(resolver, enabledKey, 1))
+      return
+    }
+    val mode = Settings.Secure.getInt(resolver, modeKey, -1)
+    check(Settings.Secure.putInt(resolver, modeKey, -1))
+    check(Settings.Secure.putInt(resolver, enabledKey, 1))
+    check(Settings.Secure.putInt(resolver, enabledKey, 0))
+    check(Settings.Secure.putInt(resolver, modeKey, mode))
+  }
+
+  private fun nightLightRange(): IntRange {
+    val resources = android.content.res.Resources.getSystem()
+
+    fun config(name: String, fallback: Int): Int {
+      val id = resources.getIdentifier(name, "integer", "android")
+      return if (id != 0) resources.getInteger(id) else fallback
+    }
+    return config(
+      "config_nightDisplayColorTemperatureMin",
+      2596
+    )..config("config_nightDisplayColorTemperatureMax", 4082)
+  }
+
+  /** Doesn't wake the phone, because nobody sees the screen while it sleeps. The step fires on wake. */
+  private fun scheduleNightLightStep(next: Long?) {
+    val pending = PendingIntent.getBroadcast(
+      context,
+      1,
+      Intent(context, AutomationReceiver::class.java),
+      PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    )
+    if (next == null) {
+      alarm.cancel(pending)
+    } else if (alarm.canScheduleExactAlarms()) {
+      alarm.setExactAndAllowWhileIdle(AlarmManager.RTC, next, pending)
+    } else {
+      alarm.setAndAllowWhileIdle(AlarmManager.RTC, next, pending)
     }
   }
 
@@ -280,3 +379,5 @@ class Engine(private val context: Context) {
       .put("statuses", JSONObject(d.statuses.entries.associate { it.key.id to it.value.id }))
   }
 }
+
+private val displayLock = Any()

@@ -17,25 +17,35 @@ enum class RoutineKind(
   val id: String,
   val appRule: AppRule,
   val usesDnd: Boolean,
-  val usesGrayscale: Boolean
+  val usesGrayscale: Boolean,
+  /** Restrictions need notice to turn off and yield to a pause or a day off. */
+  val restriction: Boolean = true
 ) {
   ACCESS("access", AppRule.BLOCK_LISTED, usesDnd = false, usesGrayscale = false),
   FOCUS("focus", AppRule.BLOCK_LISTED, usesDnd = true, usesGrayscale = true),
   BEDTIME("bedtime", AppRule.ALLOW_LISTED, usesDnd = true, usesGrayscale = true),
-  GRAYSCALE("grayscale", AppRule.NONE, usesDnd = false, usesGrayscale = true);
+  GRAYSCALE("grayscale", AppRule.NONE, usesDnd = false, usesGrayscale = true),
+  NIGHT_LIGHT(
+    "nightLight",
+    AppRule.NONE,
+    usesDnd = false,
+    usesGrayscale = false,
+    restriction = false
+  );
 
   val title: String get() = when (this) {
     ACCESS -> "Acceso a aplicaciones"
     FOCUS -> "Concentración"
     BEDTIME -> "Descanso"
     GRAYSCALE -> "Escala de grises"
+    NIGHT_LIGHT -> "Luz nocturna"
   }
 
   fun runs(scheduled: Boolean, focusRemaining: Long, earlyUntil: Long, now: Long) = when (this) {
     FOCUS -> focusRemaining > 0
     ACCESS -> !scheduled
     BEDTIME -> scheduled || earlyUntil > now
-    GRAYSCALE -> scheduled
+    GRAYSCALE, NIGHT_LIGHT -> scheduled
   }
 
   companion object {
@@ -71,7 +81,9 @@ data class Routine(
   val windows: List<Window>,
   val apps: List<String>,
   val colorApps: List<String>,
-  val earlyStart: LocalTime
+  val earlyStart: LocalTime,
+  val rampMinutes: Int = 90,
+  val finalIntensity: Int = 50
 ) {
   fun blocks(pkg: String) = when (kind.appRule) {
     AppRule.NONE -> false
@@ -85,7 +97,7 @@ data class Routine(
 
   fun needsSetup(p: Permissions) = !p.alarms ||
     (needsAccessibility() && !p.accessibility) ||
-    (kind.usesGrayscale && !p.grayscale) ||
+    ((kind.usesGrayscale || kind == RoutineKind.NIGHT_LIGHT) && !p.grayscale) ||
     (kind.usesDnd && !p.dnd)
 
   fun status(p: Permissions, running: Boolean) = when {
@@ -100,6 +112,7 @@ data class Routine(
     .put("windows", JSONArray(windows.map { it.toJson() }))
     .put("apps", JSONArray(apps)).put("colorApps", JSONArray(colorApps))
     .put("earlyStart", earlyStart.toString())
+    .put("rampMinutes", rampMinutes).put("finalIntensity", finalIntensity)
 
   companion object {
     private val packageName = Regex("[A-Za-z0-9_.]+")
@@ -120,7 +133,12 @@ data class Routine(
         (0 until a.length()).map { Window.parse(a.getJSONObject(it)) }
       }
       require(windows.size <= 20)
-      if (kind == RoutineKind.BEDTIME) require(windows.size == 1)
+      if (kind == RoutineKind.BEDTIME || kind == RoutineKind.NIGHT_LIGHT) {
+        require(windows.size == 1)
+      }
+      val rampMinutes = r.optInt("rampMinutes", 90)
+      val finalIntensity = r.optInt("finalIntensity", 50)
+      require(rampMinutes in 15..240 && finalIntensity in 1..100)
       return Routine(
         kind,
         kind.title,
@@ -128,7 +146,9 @@ data class Routine(
         windows,
         packages(r, "apps"),
         packages(r, "colorApps"),
-        earlyStart
+        earlyStart,
+        rampMinutes,
+        finalIntensity
       )
     }
   }
@@ -165,16 +185,24 @@ data class Config(val focusMinutes: Int, val routines: List<Routine>) {
   companion object {
     val EMPTY = Config(50, emptyList())
 
+    private val defaultNightLight = Routine(
+      RoutineKind.NIGHT_LIGHT,
+      RoutineKind.NIGHT_LIGHT.title,
+      false,
+      listOf(Window(LocalTime.of(21, 0), LocalTime.of(7, 0), listOf(1, 2, 3, 4, 5, 6, 7))),
+      emptyList(),
+      emptyList(),
+      LocalTime.of(20, 0)
+    )
+
     fun parse(raw: String): Config {
       val c = JSONObject(raw)
       require(c.getInt("version") == 1)
       val rs = c.getJSONArray("routines")
-      return Config(
-        c.getInt("focusMinutes"),
-        (0 until rs.length()).map {
-          Routine.parse(rs.getJSONObject(it))
-        }
-      ).validated()
+      val routines = (0 until rs.length()).map { Routine.parse(rs.getJSONObject(it)) }
+      // Configs saved before Night Light existed lack it, and updating must keep them.
+      val added = listOf(defaultNightLight).filter { new -> routines.none { it.kind == new.kind } }
+      return Config(c.getInt("focusMinutes"), routines + added).validated()
     }
   }
 }

@@ -19,6 +19,23 @@ const step = (value: string, by: number) =>
   apply("focus", { type: "setMinutes", value }, { type: "stepMinutes", by }).minutes;
 
 describe("draft edits", () => {
+  it("keeps the night light ramp inside its limits", () => {
+    const low = apply("nightLight", { type: "stepRamp", field: "rampMinutes", by: -500 });
+    expect(low.routine.rampMinutes).toBe(15);
+    const typed = editDraft(low, { type: "setRamp", field: "finalIntensity", value: "1x00" });
+    expect(typed.routine.finalIntensity).toBe(100);
+    const high = editDraft(typed, { type: "stepRamp", field: "finalIntensity", by: 5 });
+    expect(high.routine.finalIntensity).toBe(100);
+  });
+  it("won't save a night light ramp outside its limits", () => {
+    const original = begin("nightLight");
+    const short = editDraft(original, { type: "setRamp", field: "rampMinutes", value: "4" });
+    expect(checkDraft(short, original, false).canSaveWeekly).toBe(false);
+    const empty = editDraft(original, { type: "setRamp", field: "finalIntensity", value: "" });
+    expect(checkDraft(empty, original, false).canSaveToday).toBe(false);
+    const good = editDraft(original, { type: "setRamp", field: "finalIntensity", value: "75" });
+    expect(checkDraft(good, original, false).canSaveWeekly).toBe(true);
+  });
   it("copies the routine, so edits leave the saved one alone", () => {
     const draft = begin("access");
     expect(draft.minutes).toBe("50");

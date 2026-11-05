@@ -1,4 +1,11 @@
-import { earliestChargingStart, editors, parseMinutes, type Routine, type Window } from "./model";
+import {
+  earliestChargingStart,
+  editors,
+  parseMinutes,
+  rampLimits,
+  type Routine,
+  type Window,
+} from "./model";
 
 /** The unsaved copy of a routine that the editor changes. `minutes` is the focus duration as typed. */
 export type Draft = {
@@ -15,7 +22,11 @@ export type DraftEdit =
   | { type: "addWindow" }
   | { type: "removeWindow"; index: number }
   | { type: "setEarlyStart"; earlyStart: string }
+  | { type: "setRamp"; field: RampField; value: string }
+  | { type: "stepRamp"; field: RampField; by: number }
   | { type: "toggleApp"; list: "apps" | "colorApps"; packageName: string };
+
+export type RampField = keyof typeof rampLimits;
 
 export function beginDraft(routine: Routine, minutes: number): Draft {
   return {
@@ -69,6 +80,13 @@ export function editDraft(draft: Draft, edit: DraftEdit): Draft {
       });
     case "setEarlyStart":
       return editRoutine(draft, { earlyStart: edit.earlyStart });
+    case "setRamp":
+      return editRoutine(draft, { [edit.field]: Number(edit.value.replace(/\D/g, "")) });
+    case "stepRamp": {
+      const { min, max } = rampLimits[edit.field];
+      const value = draft.routine[edit.field] + edit.by;
+      return editRoutine(draft, { [edit.field]: Math.min(max, Math.max(min, value)) });
+    }
     default:
       return editRoutine(draft, {
         [edit.list]: toggled(draft.routine[edit.list], edit.packageName),
@@ -82,6 +100,11 @@ export function isDirty(draft?: Draft, original?: Draft) {
 }
 
 /** Validates what the routine kind's editor shows, and says which saves are open. */
+export function rampFieldInvalid(routine: Routine, field: RampField) {
+  const { min, max } = rampLimits[field];
+  return routine[field] < min || routine[field] > max;
+}
+
 export function checkDraft(draft: Draft, original: Draft | undefined, overridden: boolean) {
   const { routine } = draft;
   const editor = editors[routine.id];
@@ -90,7 +113,9 @@ export function checkDraft(draft: Draft, original: Draft | undefined, overridden
   const invalid =
     routine.windows.some((window) => !window.days.length) ||
     earlyStartInvalid ||
-    (editor.session && minutes === null);
+    (editor.session && minutes === null) ||
+    (!!editor.ramp &&
+      (rampFieldInvalid(routine, "rampMinutes") || rampFieldInvalid(routine, "finalIntensity")));
   const dirty = isDirty(draft, original);
   return {
     minutes,

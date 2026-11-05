@@ -1,7 +1,9 @@
 # Glossary
 
-- **Routine**: one of the fixed automation kinds: app access, focus, bedtime or grayscale.
+- **Routine**: one of the fixed automation kinds: app access, focus, bedtime, grayscale or Night Light.
 - **Routine kind**: what a routine requires and does. `RoutineKind` holds its app rule, DND use and grayscale use.
+- **Restriction**: a routine that limits the phone. Turning one off needs notice, and a pause or a day off releases it. Night Light is the one routine that isn't a restriction.
+- **Ramp**: Night Light's gradual change from its starting temperature to its final intensity, timed from the start of the window.
 - **Window**: hours and weekdays. An overnight window belongs to its starting weekday.
 - **Draft**: the unsaved copy of a routine and focus duration that the editor changes. `src/draft.ts` holds its edits, validation and discard check.
 - **Override**: an "only today" copy of a routine. It lasts until midnight or the end of its last window, whichever is later. Saving weekly settings ends it sooner.

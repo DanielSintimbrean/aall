@@ -2,7 +2,7 @@
 
 Personal Android routines with on-phone editing. React Native, Expo and Uniwind provide the UI; a local Kotlin Expo module owns persistence, scheduling and enforcement. No account or backend. [DESIGN.md](DESIGN.md) specifies the behavior.
 
-All routines start disabled. Turning one on is instant; turning one off takes 72 elapsed hours of notice, which "Keep on" cancels. Today shows scheduled activity, missing permissions and any "only today" hours in effect. Saving weekly settings ends that routine's "only today" change. Editors configure allowed hours for app access, active grayscale hours, bedtime, weekdays and per-routine app lists. Focus defaults to 50 minutes. An arithmetic challenge pauses every restriction for 15 minutes. Days off suppress all restrictions for a local calendar date and require 72 elapsed hours of notice.
+All routines start disabled. Turning one on is instant; turning one off takes 72 elapsed hours of notice, which "Keep on" cancels. Today shows scheduled activity, missing permissions and any "only today" hours in effect. Saving weekly settings ends that routine's "only today" change. Editors configure allowed hours for app access, active grayscale hours, bedtime, weekdays and per-routine app lists. Night Light warms the screen gradually over a chosen duration, up to a chosen intensity, and gives Android's own settings back when its window ends. Focus defaults to 50 minutes. An arithmetic challenge pauses every restriction for 15 minutes. Days off suppress all restrictions for a local calendar date and require 72 elapsed hours of notice.
 
 ## Development
 
@@ -22,7 +22,7 @@ The `pnpm build:apk` output uses the generated Expo development signing certific
 
 Grant accessibility, DND, exact alarm and notification access from Phone setup. A sideloaded app may need **Allow restricted settings** in Android app info before enabling accessibility.
 
-Grayscale requires this one-time grant:
+Grayscale and Night Light require this one-time grant:
 
 ```sh
 adb shell pm grant dev.danields.aall android.permission.WRITE_SECURE_SETTINGS
