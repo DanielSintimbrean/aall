@@ -95,6 +95,24 @@ Physical phone, with simulated events. `dumpsys battery unplug` and `reset` sent
 - Android 17 sends `ACTION_POWER_CONNECTED` about 10 ms before `BATTERY_CHANGED`. In five of six connects the sticky battery status still read unplugged, so the receiver passes the plug state from the action into reconcile.
 - With Bedtime enabled in its early-start window, a connect turned on DND and grayscale within a second and Today showed Bedtime running. Unplugging kept both on. Accessibility must be on for a charging change to reach reconcile immediately. Otherwise the next reconcile sees it.
 
+## Notification shade and keyboard checks
+
+2026-11-06, emulator `aall-test`, Android 17, Gboard as the keyboard. Bedtime was set to start two minutes ahead, with Maps and the clock allowed.
+
+Before the fix:
+
+- With Chrome in front and no interaction, the alarm at the start time showed the blocking screen.
+- After opening and closing the notification shade in Chrome, the start time passed with no blocking screen, and Chrome stayed usable. Android sends a window state event when the shade opens, but none for the app below when it closes, so aall still treated System UI as the app in front.
+- In Maps, a long press on a Gboard key opened the accent popup and showed the blocking screen. Gboard's popups are separate windows that aren't the keyboard's `SoftInputWindow`.
+
+After the fix, which ignores every window from an enabled keyboard and reads the active window when windows change:
+
+- After opening and closing the shade in Chrome, the blocking screen appeared at the start time.
+- On a blocked app, opening the shade removed the blocking screen and closing it brought it back.
+- In Maps, the accent popup and the emoji panel left the keyboard usable, with no blocking screen.
+
+The service now needs `canRetrieveWindowContent` to list windows. It reads only the active window's package. Not tested on the physical phone: its keyboard and the lock screen with a PIN.
+
 ## Remaining verification
 
 - The device checks above ran before the logic moved into `Reconcile` and the snapshot became read-only. Repeat them on the current build.

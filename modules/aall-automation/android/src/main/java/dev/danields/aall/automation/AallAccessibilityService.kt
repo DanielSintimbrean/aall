@@ -10,6 +10,7 @@ import android.graphics.Color
 import android.view.Gravity
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityWindowInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.LinearLayout
@@ -18,6 +19,7 @@ import android.widget.TextView
 class AallAccessibilityService : AccessibilityService() {
   companion object {
     var instance: AallAccessibilityService? = null
+    private const val SYSTEM_UI = "com.android.systemui"
   }
 
   var foreground = ""
@@ -42,10 +44,16 @@ class AallAccessibilityService : AccessibilityService() {
   }
 
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-    if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+    when (event?.eventType) {
+      AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> windowStateChanged(event)
+      AccessibilityEvent.TYPE_WINDOWS_CHANGED -> windowsChanged()
+    }
+  }
+
+  private fun windowStateChanged(event: AccessibilityEvent) {
     val pkg = event.packageName?.toString() ?: return
-    if (event.className == "android.inputmethodservice.SoftInputWindow" &&
-      getSystemService(InputMethodManager::class.java).enabledInputMethodList.any {
+    // Keyboard popups, such as accents and emoji, are windows of their own.
+    if (getSystemService(InputMethodManager::class.java).enabledInputMethodList.any {
         it.packageName == pkg
       }
     ) {
@@ -53,10 +61,21 @@ class AallAccessibilityService : AccessibilityService() {
     }
     if (pkg == packageName && overlay != null) return
     // System UI and Recents leave the underlying app in front for color exceptions.
-    val systemUi = pkg == "com.android.systemui" ||
+    val systemUi = pkg == SYSTEM_UI ||
       (event.className == "com.android.quickstep.RecentsActivity" && isSystemApp(pkg))
     if (!systemUi) foregroundApp = pkg
-    foreground = if (systemUi) "com.android.systemui" else pkg
+    foreground = if (systemUi) SYSTEM_UI else pkg
+    Engine(this).reconcile()
+  }
+
+  /** Closing the shade or the lock screen sends no event for the app below, only a window change. */
+  private fun windowsChanged() {
+    if (foreground != SYSTEM_UI) return
+    val active = windows.firstOrNull { it.isActive } ?: return
+    if (active.type != AccessibilityWindowInfo.TYPE_APPLICATION) return
+    val pkg = active.root?.packageName?.toString() ?: return
+    foregroundApp = pkg
+    foreground = pkg
     Engine(this).reconcile()
   }
 
