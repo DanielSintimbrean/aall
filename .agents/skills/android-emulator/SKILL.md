@@ -9,7 +9,7 @@ Every branch gets its own emulator, `aall-<branch>`, created by [`scripts/emulat
 
 ## Start
 
-1. `scripts/emulator.sh create` makes the AVD for the current branch. It is idempotent; `scripts/emulator.sh name` prints the name.
+1. `scripts/emulator.sh create` makes the AVD for the current branch. It is idempotent; `scripts/emulator.sh name` prints the name. It needs the x86_64 system image from the `sdkmanager` line in README.md's Development section.
 2. T3 `device_list`, then `device_open` with `hostId: local` and `deviceId` set to that name. It boots the AVD into the user's Device panel and returns the `agent-device` command for every UI action.
 3. `serial=$(scripts/emulator.sh serial)` waits until Android has booted and prints the serial. Pass `-s "$serial"` to every `adb` call, because other emulators and the phone are attached too.
 4. Build for the emulator's ABI and install:
