@@ -14,7 +14,7 @@ pnpm build:apk
 adb install -r artifacts/aall.apk
 ```
 
-Android SDK platform 37.0, build tools 37.0.0 and NDK 27.1.12297006 are required. Install them with `sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0' 'ndk;27.1.12297006'`. Expo uses Metro for Android. Vite+ runs formatting, lint and shared TypeScript tests. ktlint formats and lints the native Kotlin module. `pnpm check` runs both linters, and `pnpm format` applies both formatters. Native JVM tests run during APK builds. `pnpm start` and `pnpm android` provide a development client. Expo Go cannot load this module.
+Android SDK platform 37.0, build tools 37.0.0 and NDK 27.1.12297006 are required. Install them with `sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0' 'ndk;27.1.12297006'`. Emulators also need `sdkmanager 'emulator' 'system-images;android-37.0;google_apis;x86_64'`. Expo uses Metro for Android. Vite+ runs formatting, lint and shared TypeScript tests. ktlint formats and lints the native Kotlin module. `pnpm check` runs both linters, and `pnpm format` applies both formatters. Native JVM tests run during APK builds. `pnpm start` and `pnpm android` provide a development client. Expo Go cannot load this module.
 
 `pnpm build:apk` builds arm64 only; set `AALL_ABIS=x86_64` for an emulator. Its output uses the generated Expo development signing certificate. Releases are built and signed locally with a persistent private key. Do not use development APKs as an Obtainium update source. Different signing certificates require uninstalling before switching and uninstalling deletes local settings.
 

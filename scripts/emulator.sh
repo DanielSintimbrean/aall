@@ -18,7 +18,8 @@ branch_avd_name() {
   local branch
   branch=$(git rev-parse --abbrev-ref HEAD)
   [[ $branch != HEAD ]] || die 'detached HEAD; pass an AVD name'
-  echo "aall-$(tr -c 'A-Za-z0-9._\n-' '-' <<<"$branch")"
+  # The hash keeps branches that sanitize alike (fix/foo, fix-foo) on separate emulators.
+  echo "aall-$(tr -c 'A-Za-z0-9._\n-' '-' <<<"$branch")-$(printf %s "$branch" | sha1sum | cut -c1-6)"
 }
 
 avd_dir() {
@@ -43,9 +44,24 @@ serial_of() {
   return 1
 }
 
+write_owner() {
+  local tmp
+  tmp=$(mktemp "$1/$owner_file.XXXXXX")
+  printf 'branch=%s\nworktree=%s\ncreated=%s\n' \
+    "$(git rev-parse --abbrev-ref HEAD)" "$(git rev-parse --show-toplevel)" "$(date -Iseconds)" \
+    >"$tmp"
+  # Rename so a concurrent prune never reads a half-written file.
+  mv "$tmp" "$1/$owner_file"
+}
+
 cmd_create() {
-  local name=$1 dir
-  if avd_dir "$name" >/dev/null; then
+  local name=$1 dir branch
+  if dir=$(avd_dir "$name"); then
+    owned "$name" || die "$name exists but was not made by this script"
+    branch=$(sed -n 's/^branch=//p' "$dir/$owner_file")
+    [[ $branch == "$(git rev-parse --abbrev-ref HEAD)" ]] || die "$name belongs to branch $branch"
+    # The worktree may have moved; keep prune from treating the emulator as orphaned.
+    write_owner "$dir"
     echo "$name already exists"
     return
   fi
@@ -54,9 +70,7 @@ cmd_create() {
   # Same footprint as aall-test, so several can run at once.
   sed -i -e '/^hw.ramSize=/d' -e '/^hw.cpu.ncore=/d' -e '/^hw.keyboard=/d' "$dir/config.ini"
   printf 'hw.ramSize=2048M\nhw.cpu.ncore=4\nhw.keyboard=yes\n' >>"$dir/config.ini"
-  printf 'branch=%s\nworktree=%s\ncreated=%s\n' \
-    "$(git rev-parse --abbrev-ref HEAD)" "$(git rev-parse --show-toplevel)" "$(date -Iseconds)" \
-    >"$dir/$owner_file"
+  write_owner "$dir"
   echo "$name created"
 }
 
