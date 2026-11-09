@@ -1,5 +1,5 @@
 import type { ExpoConfig } from "expo/config";
-const version = "0.1.3";
+const version = "0.1.4";
 // Native dialogs can't read src/theme.ts at runtime, so their colors are set at build time.
 const accent = "#5eead4";
 const surface = "#151b1b";
