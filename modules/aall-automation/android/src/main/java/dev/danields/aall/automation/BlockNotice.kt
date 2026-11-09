@@ -17,41 +17,29 @@ data class BlockNotice(
     private val time = DateTimeFormatter.ofPattern("HH:mm", locale)
     private val weekday = DateTimeFormatter.ofPattern("EEEE", locale)
 
+    private const val HORIZON = 8L * 24 * 3600000
+    private val ANY = Permissions(accessibility = true, dnd = true, alarms = true, grayscale = true)
+
     fun of(d: Decision, app: String, clock: Clock): BlockNotice {
       val now = clock.wall
       val blockers = d.routines.filter { it.blocks(app) }
-      val ends = blockers.filter { it.kind != RoutineKind.ACCESS }.associateWith { r ->
-        when (r.kind) {
-          RoutineKind.FOCUS -> now + d.focusRemaining
-
-          RoutineKind.BEDTIME -> maxOf(
-            d.state.bedtimeUntil,
-            Rules.activeInterval(r, now, clock.zone, d.state.overrides[r.kind]?.date)?.second ?: 0
-          ).takeIf { it > now }
-
-          else -> null
+      // Replay the engine at each upcoming change, so overrides, days off, turn-offs and routines
+      // that start later count the same way they will when the time comes.
+      var until: Long? = null
+      var last = blockers.map { it.kind }
+      var at = d.nextChange
+      while (at <= now + HORIZON) {
+        val later = clock.copy(wall = at, elapsed = clock.elapsed + (at - now))
+        val next = Reconcile.decide(d.state, Environment(later, app, emptySet(), false, ANY))
+        if (!next.blocked) {
+          until = at
+          break
         }
-      }.toMutableMap<Routine, Long?>()
-      // Allowed hours only count once the other routines have let the app go.
-      blockers.firstOrNull { it.kind == RoutineKind.ACCESS }?.let { r ->
-        val anchor = d.state.overrides[r.kind]?.date
-        val others = ends.values.filterNotNull().maxOrNull() ?: now
-        ends[r] = if (others > now && Rules.active(r, others, clock.zone, anchor)) {
-          others
-        } else {
-          Rules.nextStart(r, others, clock.zone, anchor)
-        }
+        last = next.routines.filter { it.blocks(app) }.map { it.kind }
+        at = next.nextChange
       }
-      // The routine that holds the app longest decides the headline.
-      val main = blockers.maxByOrNull { ends[it] ?: Long.MAX_VALUE }
-      val until = if (ends.values.any {
-          it == null
-        }
-      ) {
-        null
-      } else {
-        ends.values.filterNotNull().maxOrNull()
-      }
+      // The routine still holding the app at the end decides the headline.
+      val main = blockers.firstOrNull { it.kind in last } ?: blockers.firstOrNull()
       val title = when (main?.kind) {
         RoutineKind.ACCESS -> "Fuera de horario"
         RoutineKind.FOCUS -> "Estás concentrándote"
@@ -61,7 +49,7 @@ data class BlockNotice(
       val text = when {
         until == null -> "Esta aplicación no está disponible ahora."
 
-        main?.kind == RoutineKind.FOCUS && blockers.size == 1 ->
+        main?.kind == RoutineKind.FOCUS && blockers.size == 1 && last == listOf(main.kind) ->
           "La concentración termina a las ${at(until, clock)}."
 
         else -> "Disponible ${on(until, clock)}."

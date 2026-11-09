@@ -12,9 +12,11 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
+import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 
 /** The full-screen view shown over a blocked app. Colors follow the app's tokens in src/theme.ts. */
@@ -128,19 +130,24 @@ class BlockScreen(
     }
   }
 
-  private fun button(value: String, primary: Boolean, action: () -> Unit) =
-    text(value, 16f, if (primary) ON_ACCENT else INK, bold = true).apply {
-      val shape = if (primary) rounded(ACCENT, 999) else rounded(CANVAS, 999, LINE)
-      background = RippleDrawable(
-        ColorStateList.valueOf(if (primary) 0x33000000 else 0x33FFFFFF),
-        shape,
-        null
-      )
-      setPadding(dp(24), dp(16), dp(24), dp(16))
-      isClickable = true
-      isFocusable = true
-      setOnClickListener { action() }
-    }
+  private fun button(value: String, primary: Boolean, action: () -> Unit) = Button(context).apply {
+    text = value
+    textSize = 16f
+    setTextColor(if (primary) ON_ACCENT else INK)
+    typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+    isAllCaps = false
+    stateListAnimator = null
+    minHeight = 0
+    minimumHeight = 0
+    val shape = if (primary) rounded(ACCENT, 999) else rounded(CANVAS, 999, LINE)
+    background = RippleDrawable(
+      ColorStateList.valueOf(if (primary) 0x33000000 else 0x33FFFFFF),
+      shape,
+      null
+    )
+    setPadding(dp(24), dp(16), dp(24), dp(16))
+    setOnClickListener { action() }
+  }
 
   fun build(): View {
     val center = LinearLayout(context).apply {
@@ -172,11 +179,8 @@ class BlockScreen(
         width = LinearLayout.LayoutParams.MATCH_PARENT
       )
     }
-    return LinearLayout(context).apply {
+    val column = LinearLayout(context).apply {
       orientation = LinearLayout.VERTICAL
-      setBackgroundColor(CANVAS)
-      val side = dp(28)
-      setPadding(side, dp(48), side, dp(32))
       addView(
         center,
         LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
@@ -188,6 +192,14 @@ class BlockScreen(
           LinearLayout.LayoutParams.WRAP_CONTENT
         )
       )
+    }
+    // Scrolls when the content is taller than the screen, as in landscape or with large text.
+    return ScrollView(context).apply {
+      isFillViewport = true
+      setBackgroundColor(CANVAS)
+      val side = dp(28)
+      setPadding(side, dp(48), side, dp(32))
+      addView(column)
       setOnApplyWindowInsetsListener { v, insets ->
         val bars = insets.getInsets(
           WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout()

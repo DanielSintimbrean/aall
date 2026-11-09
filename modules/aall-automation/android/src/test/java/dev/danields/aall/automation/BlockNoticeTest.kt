@@ -98,6 +98,29 @@ class BlockNoticeTest {
     assertEquals("Disponible a las 19:30.", notice(state, c).text)
   }
 
+  @Test fun aRoutineStartingLaterKeepsTheAppBlocked() {
+    val c = clock("2026-11-09T18:00:00")
+    val focus = routine(RoutineKind.FOCUS, emptyList(), listOf("social"))
+    val early = routine(
+      RoutineKind.BEDTIME,
+      listOf(Window(LocalTime.of(19, 30), LocalTime.of(7, 0), allDays)),
+      listOf("clock")
+    )
+    val state = State(
+      Config(50, listOf(access, focus, early)),
+      timers = mapOf(Timer.FOCUS to Timer.start(c, 105 * 60000L))
+    )
+    assertEquals("Disponible mañana a las 12:30.", notice(state, c).text)
+  }
+
+  @Test fun aDayOffReleasesTheAppAtMidnight() {
+    val state = State(Config(50, listOf(access)), daysOff = listOf("2026-11-10"))
+    assertEquals(
+      "Disponible mañana a las 00:00.",
+      notice(state, clock("2026-11-09T23:00:00")).text
+    )
+  }
+
   @Test fun noWindowsMeansNoTime() {
     val n = notice(
       State(Config(50, listOf(routine(RoutineKind.ACCESS, emptyList(), listOf("social"))))),
