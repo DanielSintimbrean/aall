@@ -47,7 +47,9 @@ serial_of() {
 write_owner() {
   printf 'branch=%s\nworktree=%s\ncreated=%s\n' \
     "$(git rev-parse --abbrev-ref HEAD)" "$(git rev-parse --show-toplevel)" "$(date -Iseconds)" \
-    >"$1/$owner_file"
+    >"$1/$owner_file.tmp"
+  # Rename so a concurrent prune never reads a half-written file.
+  mv "$1/$owner_file.tmp" "$1/$owner_file"
 }
 
 cmd_create() {
