@@ -43,9 +43,13 @@ export function useDraft() {
 export function StoreProvider({
   children,
   fallback,
+  loading,
 }: {
   children: ReactNode;
+  /** Shown when the native module is missing, as in Expo Go. */
   fallback: ReactNode;
+  /** Shown on a cold start until the first snapshot arrives. */
+  loading: ReactNode;
 }) {
   const [state, setState] = useState<Snapshot>();
   const [apps, setApps] = useState<InstalledApp[]>([]);
@@ -128,8 +132,9 @@ export function StoreProvider({
     }),
     [draft, original],
   );
+  if (!native) return fallback;
   // oxlint-disable-next-line react/refs -- The ref is only read inside loadIcons, not during render.
-  if (!native || !store) return fallback;
+  if (!store) return loading;
   return (
     <StoreContext.Provider value={store}>
       <DraftContext.Provider value={drafts}>{children}</DraftContext.Provider>
