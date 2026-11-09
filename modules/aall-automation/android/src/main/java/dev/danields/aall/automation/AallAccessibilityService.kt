@@ -6,15 +6,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.graphics.Color
-import android.view.Gravity
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityWindowInfo
 import android.view.inputmethod.InputMethodManager
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.TextView
 
 class AallAccessibilityService : AccessibilityService() {
   companion object {
@@ -26,6 +21,7 @@ class AallAccessibilityService : AccessibilityService() {
   var foregroundApp = ""
     private set
   private var overlay: android.view.View? = null
+  private var overlayKey: String? = null
   private var powerRegistered = false
   private val powerReceiver = AutomationReceiver()
 
@@ -85,66 +81,52 @@ class AallAccessibilityService : AccessibilityService() {
     false
   }
 
-  fun update(decision: Decision) {
+  fun update(decision: Decision, clock: Clock) {
     val wm = getSystemService(WindowManager::class.java)
     if (!decision.blocked) {
       overlay?.let { wm.removeView(it) }
       overlay = null
+      overlayKey = null
       return
     }
-    if (overlay != null) return
-    val layout = LinearLayout(this).apply {
-      orientation = LinearLayout.VERTICAL
-      gravity = Gravity.CENTER
-      setPadding(48, 48, 48, 48)
-      setBackgroundColor(Color.rgb(8, 11, 11))
-    }
-    layout.addView(
-      TextView(this).apply {
-        text =
-          "aall\nEsta aplicación está bloqueada\n${decision.routines.joinToString { it.title }}"
-        textSize = 24f
-        setTextColor(Color.WHITE)
-        gravity = Gravity.CENTER
-      }
-    )
-    layout.addView(
-      Button(this).apply {
-        text = "Abrir aall"
-        setOnClickListener {
-          this@AallAccessibilityService.foregroundApp = packageName
-          this@AallAccessibilityService.foreground = packageName
-          Engine(this@AallAccessibilityService).reconcile()
-          startActivity(
-            packageManager.getLaunchIntentForPackage(
-              packageName
-            )!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-          )
-        }
-      }
-    )
-    layout.addView(
-      Button(this).apply {
-        text = "Inicio"
-        setOnClickListener { performGlobalAction(GLOBAL_ACTION_HOME) }
-      }
-    )
-    overlay = layout
+    val app = foreground
+    val notice = BlockNotice.of(decision, app, clock)
+    // The text, not the deadline, which jitters by milliseconds between reconciles.
+    val key = "$app|${notice.title}|${notice.text}|${notice.routines}"
+    if (overlay != null && key == overlayKey) return
+    overlayKey = key
+    val view = BlockScreen(this, app, notice, onHome = {
+      performGlobalAction(GLOBAL_ACTION_HOME)
+    }, onOpen = {
+      foregroundApp = packageName
+      foreground = packageName
+      Engine(this).reconcile()
+      startActivity(
+        packageManager.getLaunchIntentForPackage(packageName)!!
+          .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      )
+    }).build()
+    overlay?.let { wm.removeView(it) }
+    overlay = view
     wm.addView(
-      layout,
+      view,
       WindowManager.LayoutParams(
         WindowManager.LayoutParams.MATCH_PARENT,
         WindowManager.LayoutParams.MATCH_PARENT,
         WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-        0,
+        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
         android.graphics.PixelFormat.OPAQUE
-      )
+      ).apply {
+        layoutInDisplayCutoutMode =
+          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+      }
     )
   }
 
   override fun onInterrupt() {
     overlay?.let { getSystemService(WindowManager::class.java).removeView(it) }
     overlay = null
+    overlayKey = null
   }
 
   override fun onDestroy() {

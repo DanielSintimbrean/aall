@@ -156,7 +156,7 @@ class Engine(private val context: Context) {
         failures.add("No se ha podido cambiar la luz nocturna.")
       }
     }
-    AallAccessibilityService.instance?.update(decision)
+    AallAccessibilityService.instance?.update(decision, env.clock)
     scheduleAlarm(decision.nextChange)
     scheduleNightLightStep(nightLightStep)
     try {

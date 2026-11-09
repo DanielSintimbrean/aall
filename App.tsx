@@ -1,6 +1,6 @@
 import "./global.css";
 import React from "react";
-import { Text } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { DarkTheme, NavigationContainer, type Theme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import {
@@ -41,11 +41,18 @@ const missingNativeModule = (
   </SafeAreaView>
 );
 
+const loading = (
+  <View className="flex-1 items-center justify-center gap-4 bg-canvas">
+    <Text className="text-3xl font-semibold text-ink">aall</Text>
+    <ActivityIndicator color={colors.accent} />
+  </View>
+);
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
-      <StoreProvider fallback={missingNativeModule}>
+      <StoreProvider fallback={missingNativeModule} loading={loading}>
         <NavigationContainer theme={theme}>
           <Stack.Navigator
             screenOptions={{

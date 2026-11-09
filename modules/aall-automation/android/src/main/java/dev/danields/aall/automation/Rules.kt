@@ -55,18 +55,35 @@ object Rules {
     activeSince(r, now, zone, anchor) != null
 
   /** When the window running now began, or null when none is. */
-  fun activeSince(r: Routine, now: Long, zone: ZoneId, anchor: LocalDate? = null): Long? {
+  fun activeSince(r: Routine, now: Long, zone: ZoneId, anchor: LocalDate? = null): Long? =
+    activeInterval(r, now, zone, anchor)?.first
+
+  /** The window running now, or null when none is. */
+  fun activeInterval(
+    r: Routine,
+    now: Long,
+    zone: ZoneId,
+    anchor: LocalDate? = null
+  ): Pair<Long, Long>? {
     if (!r.enabled) return null
     val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
     val dates = if (anchor != null) listOf(anchor) else listOf(today.minusDays(1), today)
     return r.windows.firstNotNullOfOrNull { w ->
       dates.firstNotNullOfOrNull { d ->
-        val (start, end) = interval(w, d, zone)
-        start.takeIf {
+        interval(w, d, zone).takeIf { (start, end) ->
           (anchor != null || d.dayOfWeek.value in w.days) && now >= start && now < end
         }
       }
     }
+  }
+
+  /** When the next window starts within a week, or null when none does. */
+  fun nextStart(r: Routine, now: Long, zone: ZoneId, anchor: LocalDate? = null): Long? {
+    val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+    return r.windows.flatMap { w ->
+      (0L..7L).map(today::plusDays).filter { runsOn(w, it, anchor) }
+        .map { interval(w, it, zone).first }
+    }.filter { it > now }.minOrNull()
   }
 
   fun canBook(date: String, now: Long, zone: ZoneId): Boolean =
