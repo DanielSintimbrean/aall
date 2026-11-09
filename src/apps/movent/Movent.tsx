@@ -112,7 +112,7 @@ function Message({ children }: { children: string }) {
 function DepartureRow({ departure }: { departure: Departure }) {
   return (
     <View className="flex-row items-center gap-3 p-4">
-      <View className="w-14">
+      <View>
         <Text className="text-xl font-bold text-ink">{departure.clock}</Text>
         {departure.scheduledClock && (
           <Text className="text-xs text-muted line-through">{departure.scheduledClock}</Text>
