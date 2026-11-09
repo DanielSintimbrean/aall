@@ -78,6 +78,26 @@ class BlockNoticeTest {
     assertEquals("La concentración termina a las 10:50.", n.text)
   }
 
+  @Test fun focusOutlastingTheNextWindowWaitsForTheOneAfter() {
+    val c = clock("2026-11-09T18:00:00")
+    val focus = routine(RoutineKind.FOCUS, emptyList(), listOf("social"))
+    val state = State(
+      Config(50, listOf(access, focus)),
+      timers = mapOf(Timer.FOCUS to Timer.start(c, 150 * 60000L))
+    )
+    assertEquals("Disponible mañana a las 12:30.", notice(state, c).text)
+  }
+
+  @Test fun focusEndingInsideAWindowFreesTheAppThen() {
+    val c = clock("2026-11-09T18:00:00")
+    val focus = routine(RoutineKind.FOCUS, emptyList(), listOf("social"))
+    val state = State(
+      Config(50, listOf(access, focus)),
+      timers = mapOf(Timer.FOCUS to Timer.start(c, 90 * 60000L))
+    )
+    assertEquals("Disponible a las 19:30.", notice(state, c).text)
+  }
+
   @Test fun noWindowsMeansNoTime() {
     val n = notice(
       State(Config(50, listOf(routine(RoutineKind.ACCESS, emptyList(), listOf("social"))))),

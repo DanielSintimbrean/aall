@@ -20,19 +20,26 @@ data class BlockNotice(
     fun of(d: Decision, app: String, clock: Clock): BlockNotice {
       val now = clock.wall
       val blockers = d.routines.filter { it.blocks(app) }
-      val ends = blockers.associateWith { r ->
-        val anchor = d.state.overrides[r.kind]?.date
+      val ends = blockers.filter { it.kind != RoutineKind.ACCESS }.associateWith { r ->
         when (r.kind) {
           RoutineKind.FOCUS -> now + d.focusRemaining
 
           RoutineKind.BEDTIME -> maxOf(
             d.state.bedtimeUntil,
-            Rules.activeInterval(r, now, clock.zone, anchor)?.second ?: 0
+            Rules.activeInterval(r, now, clock.zone, d.state.overrides[r.kind]?.date)?.second ?: 0
           ).takeIf { it > now }
 
-          RoutineKind.ACCESS -> Rules.nextStart(r, now, clock.zone, anchor)
-
           else -> null
+        }
+      }.toMutableMap<Routine, Long?>()
+      // Allowed hours only count once the other routines have let the app go.
+      blockers.firstOrNull { it.kind == RoutineKind.ACCESS }?.let { r ->
+        val anchor = d.state.overrides[r.kind]?.date
+        val others = ends.values.filterNotNull().maxOrNull() ?: now
+        ends[r] = if (others > now && Rules.active(r, others, clock.zone, anchor)) {
+          others
+        } else {
+          Rules.nextStart(r, others, clock.zone, anchor)
         }
       }
       // The routine that holds the app longest decides the headline.
