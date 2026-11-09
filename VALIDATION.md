@@ -127,3 +127,23 @@ These checks require real elapsed time or changes to the phone's operating state
 ## Tooling warnings
 
 Vite+ 1.5.0 uses its bundled Vite implementation. pnpm reports Vitest's upstream Vite version range against the Vite+ alias version. The shared tests run successfully. Expo's native Gradle plugins emit obsolete variant API warnings under AGP 9.2.1; native build succeeds. These dependencies will need updates before AGP 10.
+
+## Home visibility during bedtime
+
+2026-11-09, Android 17 emulator. A temporary debug Activity called the same
+`resolveActivity(ACTION_MAIN + CATEGORY_HOME, 0)` as `Engine.environment`, from
+aall's own UID. With the original manifest it returned `com.android.settings`,
+although the selected home was Pixel Launcher. With the HOME query declared it
+returned `com.google.android.apps.nexuslauncher`. The probe was removed from the
+build afterward. This confirms why the existing always-allowed launcher exception
+was protecting the wrong package. The existing reconcile test also checks that an
+always-allowed launcher remains usable during bedtime while a game is blocked.
+
+Typecheck, Vite+ checks, ktlint, 27 shared tests and the native JVM suite passed.
+
+The final release APK built successfully, passed signature and zip alignment
+verification, and was installed over the existing app on the physical Pixel 8 Pro.
+The phone uses Kvaesitso. Existing schedules were preserved; no bedtime override
+was applied on the phone. After closing the device session, dumpsys confirmed both
+aall and Kvaesitso accessibility services were bound. A full bedtime interaction
+on the physical phone has not been verified.
