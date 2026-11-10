@@ -65,7 +65,7 @@ class BlockingTest {
     phone.pullDownShade()
     phone.closeShade()
     phone.advanceTo("22:30")
-    assertTrue(phone.blocked)
+    assertEquals("chrome", phone.device.foreground)
     assertEquals("Es hora de descansar", phone.device.block?.title)
   }
 
