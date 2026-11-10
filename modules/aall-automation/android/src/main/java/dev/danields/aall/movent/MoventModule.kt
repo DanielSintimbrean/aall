@@ -1,7 +1,6 @@
 package dev.danields.aall.movent
 
 import android.app.NotificationManager
-import dev.danields.aall.core.Board
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import org.json.JSONArray

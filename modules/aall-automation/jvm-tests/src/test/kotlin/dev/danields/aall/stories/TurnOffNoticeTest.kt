@@ -66,6 +66,7 @@ class TurnOffNoticeTest {
     assertTrue(on.bedtimeOn())
     val off = Phone("2026-11-02T12:00", bedtime(enabled = false))
     off.saveWeekly(bedtime(enabled = false))
+    off.overrideToday(bedtime(enabled = false))
     off.saveWeekly(bedtime())
     assertTrue(off.bedtimeOn())
   }

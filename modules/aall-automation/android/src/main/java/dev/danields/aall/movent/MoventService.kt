@@ -15,8 +15,6 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.PowerManager
 import dev.danields.aall.automation.R
-import dev.danields.aall.core.Board
-import dev.danields.aall.core.BoardNotice
 
 /** Keeps the board in the notification shade. It only polls while the screen is on, since nobody can read it otherwise. */
 class MoventService : Service() {

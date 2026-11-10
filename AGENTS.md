@@ -22,7 +22,7 @@ The React UI in `App.tsx` and `src/` is dumb: it polls a read-only snapshot and 
 ## Verifying and testing
 
 - Run `mise run check` before you commit: typecheck, Vite+ and ktlint formatting and lint, the TypeScript tests, and the Kotlin tests (`mise run test:kotlin`, a plain JVM build in `modules/aall-automation/jvm-tests/`).
-- Code in `core/` must not import Android; the JVM build compiles only `core/`, so an Android import fails it.
+- Code in `core/` must not import Android or `movent`; the JVM build compiles only `core/` and Movent's `Board` files, so an Android import fails it.
 - Pure code takes `Clock`, `Environment` or plain data and returns values. Reading the clock or Android belongs in `AndroidDevice` and the services. `NightLight.advance` is the model: `Engine` reads the settings, `advance` decides, `Engine` writes.
 - A logic or state bug fix starts with a test that goes red on main, at the lowest layer where it fails. For `Engine`, write a story in `jvm-tests/.../stories/`: a fake `Phone` whose clock moves only by firing the alarms Engine scheduled. When the bug lives in an Android adapter (`AndroidDevice`, `AallAccessibilityService`), first move the decision into `core/`, then test that.
 - Extend before you add. When an existing case or table covers the behavior, add a row or an assertion there.

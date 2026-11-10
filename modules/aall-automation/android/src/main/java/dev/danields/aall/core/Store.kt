@@ -20,7 +20,7 @@ interface KeyValue {
   fun write(changes: Map<String, Any?>): Boolean
 }
 
-class Store(val prefs: KeyValue) {
+class Store(private val prefs: KeyValue) {
   fun hasConfig() = prefs.contains("config")
 
   fun load() = State(

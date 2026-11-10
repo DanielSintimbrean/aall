@@ -1,6 +1,5 @@
 package dev.danields.aall.stories
 
-import dev.danields.aall.core.Rules
 import dev.danields.aall.harness.FakeDevice
 import dev.danields.aall.harness.Phone
 import dev.danields.aall.harness.access
@@ -14,7 +13,14 @@ import org.junit.Test
 class BlockingTest {
   @Test fun bedtimeBlocksUnlistedAppsButNotTheListOrEssentials() {
     val phone = Phone("2026-11-02T23:00", bedtime(apps = listOf("clock")))
-    for (pkg in Rules.alwaysAllowed + listOf("clock", FakeDevice.LAUNCHER, FakeDevice.DIALER)) {
+    val essentials = listOf(
+      "com.android.settings", "com.android.settings.intelligence",
+      "com.android.providers.downloads", "com.android.providers.downloads.ui",
+      "com.android.documentsui", "com.google.android.documentsui",
+      "com.google.android.apps.nbu.files", "com.amaze.filemanager",
+      "com.android.packageinstaller", "com.android.certinstaller"
+    )
+    for (pkg in essentials + listOf("clock", FakeDevice.LAUNCHER, FakeDevice.DIALER)) {
       phone.open(pkg)
       assertFalse(pkg, phone.blocked)
     }
