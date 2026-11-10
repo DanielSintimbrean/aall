@@ -64,12 +64,20 @@ class AallAccessibilityService : AccessibilityService() {
     Engine(this).reconcile()
   }
 
-  /** Closing the shade or the lock screen sends no event for the app below, only a window change. */
+  /** An overlay can keep focus while the application underneath changes. */
   private fun windowsChanged() {
-    if (foreground != SYSTEM_UI) return
-    val active = windows.firstOrNull { it.isActive } ?: return
-    if (active.type != AccessibilityWindowInfo.TYPE_APPLICATION) return
-    val pkg = active.root?.packageName?.toString() ?: return
+    val current = windows
+    val active = current.firstOrNull { it.isActive }
+    val app = when (active?.type) {
+      AccessibilityWindowInfo.TYPE_APPLICATION -> active
+
+      AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY ->
+        current.firstOrNull { it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
+
+      else -> null
+    } ?: return
+    val pkg = app.root?.packageName?.toString() ?: return
+    if (pkg == foreground || (pkg == packageName && overlay != null)) return
     foregroundApp = pkg
     foreground = pkg
     Engine(this).reconcile()

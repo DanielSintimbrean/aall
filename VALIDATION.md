@@ -147,3 +147,38 @@ The phone uses Kvaesitso. Existing schedules were preserved; no bedtime override
 was applied on the phone. After closing the device session, dumpsys confirmed both
 aall and Kvaesitso accessibility services were bound. A full bedtime interaction
 on the physical phone has not been verified.
+
+## Essential utilities during Descanso
+
+2026-11-10, branch-owned Android 17 emulator and physical Pixel 8 Pro.
+Added explicit exceptions for document pickers, download management, Google Files,
+Amaze, Settings Intelligence, and package/certificate installation. Window changes
+now inspect the application below the accessibility overlay: the overlay can hold
+focus when a permitted application opens and no application state event arrives.
+
+Reproduced the stuck overlay on the emulator before the window handling change.
+With the final APK, activated Descanso using Only today on both devices. Chrome
+was blocked; switching to Settings removed the overlay on both. Downloads opened
+on both and Google Files opened on the phone. Screenshots were captured without
+an active UIAutomator reader, which otherwise temporarily suppresses aall's
+accessibility service. Confirmed the service was bound during phone checks.
+
+Installed the final APK on the phone with the existing release signing key and
+without uninstalling. Restored the phone's original disabled weekly Descanso
+configuration and removed the test override. Enabled aall accessibility during
+setup, preserving the launcher's service. Phone DND and exact-alarm access remain
+ungranted; their effects were not validated on the phone. Deleted the branch AVD.
+
+94 native JVM tests, 27 shared tests, typecheck, project lint and Kotlin formatting
+passed. The native suite includes essential-utility exemptions during Descanso
+and verifies an ordinary unlisted app remains blocked.
+
+Full-send review: Sol identified that a higher-layer picture-in-picture window
+could displace the active application. Prefer the active application, and only
+fall back to the underlying application when an accessibility overlay is active.
+Sol approved this adjustment in round 2. Rebuilt the APK and repeated the active
+Descanso Chrome-to-Settings transition on a fresh branch emulator with the service
+bound; Chrome was blocked and Settings opened without the overlay. PiP selection
+was reviewed statically, not exercised with a video. Installed this final signed
+APK on the Pixel without changing its restored routine configuration, and deleted
+the branch emulator again.

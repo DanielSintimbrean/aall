@@ -7,8 +7,18 @@ import java.time.ZoneId
 private const val DAY_OFF_NOTICE = 72L * 3600000
 
 object Rules {
+  // Keep system tasks usable even when bedtime blocks every unlisted app.
   val alwaysAllowed = setOf(
     "com.android.settings",
+    "com.android.settings.intelligence",
+    "com.android.providers.downloads",
+    "com.android.providers.downloads.ui",
+    "com.android.documentsui",
+    "com.google.android.documentsui",
+    "com.google.android.apps.nbu.files",
+    "com.amaze.filemanager",
+    "com.android.packageinstaller",
+    "com.android.certinstaller",
     "com.android.systemui",
     "com.google.android.dialer",
     "com.samsung.android.dialer",
