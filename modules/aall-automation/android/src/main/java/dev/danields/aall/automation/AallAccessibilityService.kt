@@ -13,15 +13,17 @@ import android.view.inputmethod.InputMethodManager
 import dev.danields.aall.core.BlockNotice
 import dev.danields.aall.core.Clock
 import dev.danields.aall.core.Decision
+import dev.danields.aall.core.Foreground
+import dev.danields.aall.core.Front
+import dev.danields.aall.core.ScreenWindow
+import dev.danields.aall.core.WindowType
 
 class AallAccessibilityService : AccessibilityService() {
   companion object {
     var instance: AallAccessibilityService? = null
-    private const val SYSTEM_UI = "com.android.systemui"
   }
 
-  var foreground = ""
-  var foregroundApp = ""
+  var front = Front("", "")
     private set
   private var overlay: android.view.View? = null
   private var overlayKey: String? = null
@@ -51,38 +53,37 @@ class AallAccessibilityService : AccessibilityService() {
 
   private fun windowStateChanged(event: AccessibilityEvent) {
     val pkg = event.packageName?.toString() ?: return
-    // Keyboard popups, such as accents and emoji, are windows of their own.
-    if (getSystemService(InputMethodManager::class.java).enabledInputMethodList.any {
-        it.packageName == pkg
-      }
-    ) {
-      return
-    }
-    if (pkg == packageName && overlay != null) return
-    // System UI and Recents leave the underlying app in front for color exceptions.
-    val systemUi = pkg == SYSTEM_UI ||
-      (event.className == "com.android.quickstep.RecentsActivity" && isSystemApp(pkg))
-    if (!systemUi) foregroundApp = pkg
-    foreground = if (systemUi) SYSTEM_UI else pkg
-    engine(this).reconcile()
+    val keyboards = getSystemService(InputMethodManager::class.java).enabledInputMethodList
+      .map { it.packageName }.toSet()
+    setFront(
+      Foreground.stateChanged(
+        pkg,
+        event.className?.toString(),
+        isSystemApp(pkg),
+        keyboards,
+        packageName,
+        overlay != null,
+        front
+      )
+    )
   }
 
-  /** An overlay can keep focus while the application underneath changes. */
   private fun windowsChanged() {
-    val current = windows
-    val active = current.firstOrNull { it.isActive }
-    val app = when (active?.type) {
-      AccessibilityWindowInfo.TYPE_APPLICATION -> active
+    val current = windows.map {
+      val type = when (it.type) {
+        AccessibilityWindowInfo.TYPE_APPLICATION -> WindowType.APPLICATION
+        AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY -> WindowType.ACCESSIBILITY_OVERLAY
+        else -> WindowType.OTHER
+      }
+      // Only application windows can name the app in front, and reading a root is a binder call.
+      val pkg = if (type == WindowType.APPLICATION) it.root?.packageName?.toString() else null
+      ScreenWindow(type, it.isActive, pkg)
+    }
+    setFront(Foreground.windowsChanged(current, packageName, overlay != null, front))
+  }
 
-      AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY ->
-        current.firstOrNull { it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
-
-      else -> null
-    } ?: return
-    val pkg = app.root?.packageName?.toString() ?: return
-    if (pkg == foreground || (pkg == packageName && overlay != null)) return
-    foregroundApp = pkg
-    foreground = pkg
+  private fun setFront(next: Front?) {
+    front = next ?: return
     engine(this).reconcile()
   }
 
@@ -100,7 +101,7 @@ class AallAccessibilityService : AccessibilityService() {
       overlayKey = null
       return
     }
-    val app = foreground
+    val app = front.foreground
     val notice = BlockNotice.of(decision, app, clock)
     // The text, not the deadline, which jitters by milliseconds between reconciles.
     val key = "$app|${notice.title}|${notice.text}|${notice.routines}"
@@ -109,9 +110,7 @@ class AallAccessibilityService : AccessibilityService() {
     val view = BlockScreen(this, app, notice, onHome = {
       performGlobalAction(GLOBAL_ACTION_HOME)
     }, onOpen = {
-      foregroundApp = packageName
-      foreground = packageName
-      engine(this).reconcile()
+      setFront(Front(packageName, packageName))
       startActivity(
         packageManager.getLaunchIntentForPackage(packageName)!!
           .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
