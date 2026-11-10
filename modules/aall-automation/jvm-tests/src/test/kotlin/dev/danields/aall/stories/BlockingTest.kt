@@ -59,6 +59,16 @@ class BlockingTest {
     assertTrue(phone.grayscale)
   }
 
+  @Test fun bedtimeBlocksTheAppLeftInFrontAfterTheShadeCloses() {
+    val phone = Phone("2026-11-02T22:00", bedtime())
+    phone.open("chrome")
+    phone.pullDownShade()
+    phone.closeShade()
+    phone.advanceTo("22:30")
+    assertTrue(phone.blocked)
+    assertEquals("Es hora de descansar", phone.device.block?.title)
+  }
+
   @Test fun aColorExceptionOnlyReleasesItsOwnRoutinesGrayscale() {
     val phone = Phone(
       "2026-11-02T23:00",

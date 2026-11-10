@@ -89,8 +89,8 @@ class AndroidDevice(private val context: Context) : Device {
     return setOfNotNull(context.packageName, launcher, dialer)
   }
 
-  override val foreground get() = AallAccessibilityService.instance?.foreground ?: ""
-  override val foregroundApp get() = AallAccessibilityService.instance?.foregroundApp ?: ""
+  override val foreground get() = AallAccessibilityService.instance?.front?.foreground ?: ""
+  override val foregroundApp get() = AallAccessibilityService.instance?.front?.foregroundApp ?: ""
 
   override fun isSystemApp(pkg: String) = try {
     val flags = context.packageManager.getApplicationInfo(pkg, 0).flags

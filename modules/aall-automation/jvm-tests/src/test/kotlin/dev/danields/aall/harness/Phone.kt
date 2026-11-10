@@ -3,9 +3,13 @@ package dev.danields.aall.harness
 import dev.danields.aall.core.Clock
 import dev.danields.aall.core.Config
 import dev.danields.aall.core.Engine
+import dev.danields.aall.core.Foreground
+import dev.danields.aall.core.Front
 import dev.danields.aall.core.Routine
 import dev.danields.aall.core.RoutineKind
+import dev.danields.aall.core.ScreenWindow
 import dev.danields.aall.core.Window
+import dev.danields.aall.core.WindowType
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
@@ -108,15 +112,36 @@ class Phone(start: String, vararg routines: Routine, setup: FakeDevice.() -> Uni
   fun turningOff(kind: RoutineKind) =
     snapshot().getJSONObject("turningOff").optLong(kind.id).takeIf { it != 0L }
 
-  fun open(pkg: String) {
-    device.foreground = pkg
-    device.foregroundApp = pkg
-    engine.reconcile()
-  }
+  fun open(pkg: String) = stateChanged(pkg)
 
   /** System UI comes to the front and the app stays underneath. */
-  fun pullDownShade() {
-    device.foreground = "com.android.systemui"
+  fun pullDownShade() = stateChanged(Foreground.SYSTEM_UI)
+
+  /** The app below becomes the active window again, with no state change for it. */
+  fun closeShade() =
+    windowsChanged(ScreenWindow(WindowType.APPLICATION, true, device.foregroundApp))
+
+  private fun stateChanged(pkg: String) = setFront(
+    Foreground.stateChanged(
+      pkg,
+      null,
+      pkg in device.systemApps,
+      emptySet(),
+      FakeDevice.AALL,
+      device.block != null,
+      front
+    )
+  )
+
+  private fun windowsChanged(vararg windows: ScreenWindow) = setFront(
+    Foreground.windowsChanged(windows.toList(), FakeDevice.AALL, device.block != null, front)
+  )
+
+  private val front get() = Front(device.foreground, device.foregroundApp)
+
+  private fun setFront(next: Front?) {
+    device.foreground = next?.foreground ?: return
+    device.foregroundApp = next.foregroundApp
     engine.reconcile()
   }
 
