@@ -1,4 +1,4 @@
-package dev.danields.aall.movent
+package dev.danields.aall.core
 
 data class BoardNotice(
   val title: String,

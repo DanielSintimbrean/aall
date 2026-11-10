@@ -1,4 +1,4 @@
-package dev.danields.aall.movent
+package dev.danields.aall.core
 
 import java.net.HttpURLConnection
 import java.net.URL

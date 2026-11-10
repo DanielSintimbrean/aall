@@ -1,38 +1,15 @@
-package dev.danields.aall.automation
+package dev.danields.aall.core
 
-import android.app.AlarmManager
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
-import android.os.BatteryManager
-import android.os.SystemClock
-import android.provider.Settings
-import android.telecom.TelecomManager
-import java.time.LocalDate
-import java.time.ZoneId
 import org.json.JSONArray
 import org.json.JSONObject
 
-class Engine(private val context: Context) {
-  private val store = Store(context)
-  private val prefs get() = store.prefs
-  private val status get() = StatusNotifier(context, prefs)
-  private val alarm get() = context.getSystemService(AlarmManager::class.java)
-  private val notification get() = context.getSystemService(NotificationManager::class.java)
+class Engine(private val device: Device, private val prefs: KeyValue) {
+  private val store = Store(prefs)
 
-  private fun clock() = Clock(
-    System.currentTimeMillis(),
-    SystemClock.elapsedRealtime(),
-    Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1),
-    ZoneId.systemDefault()
-  )
+  private fun clock() = device.clock()
 
   private fun put(key: String, value: String) {
-    check(prefs.edit().putString(key, value).commit())
+    check(prefs.write(mapOf(key to value)))
   }
 
   private fun update(change: (State) -> State) {
@@ -118,7 +95,7 @@ class Engine(private val context: Context) {
   fun solve(answer: String): Boolean {
     val raw = prefs.getString("challenge", null) ?: return false
     if (!Rules.verifies(answer, JSONObject(raw).getInt("answer"))) return false
-    prefs.edit().remove("challenge").commit()
+    prefs.write(mapOf("challenge" to null))
     update { it.copy(timers = it.timers + (Timer.PAUSE to Timer.start(clock(), 900000))) }
     return true
   }
@@ -133,10 +110,10 @@ class Engine(private val context: Context) {
     val failures = mutableListOf<String>()
     decision.setDnd?.let { wanted ->
       try {
-        applyDnd(wanted)
+        device.setDnd(wanted)
         store.save(decision.state, decision.state.copy(dndOwned = wanted))
       } catch (ex: Exception) {
-        android.util.Log.e("AallAutomation", "Failed to change DND", ex)
+        device.logError("Failed to change DND", ex)
         failures.add("No se ha podido cambiar No molestar.")
       }
     }
@@ -144,7 +121,7 @@ class Engine(private val context: Context) {
       try {
         applyGrayscale(wanted)
       } catch (ex: Exception) {
-        android.util.Log.e("AallAutomation", "Failed to change grayscale", ex)
+        device.logError("Failed to change grayscale", ex)
         failures.add("No se ha podido cambiar la escala de grises.")
       }
     }
@@ -153,88 +130,53 @@ class Engine(private val context: Context) {
       try {
         nightLightStep = applyNightLight(decision.nightLight, env.clock.wall)
       } catch (ex: Exception) {
-        android.util.Log.e("AallAutomation", "Failed to change Night Light", ex)
+        device.logError("Failed to change Night Light", ex)
         failures.add("No se ha podido cambiar la luz nocturna.")
       }
     }
-    AallAccessibilityService.instance?.update(decision, env.clock)
-    scheduleAlarm(decision.nextChange)
-    scheduleNightLightStep(nightLightStep)
+    device.showBlock(decision, env.clock)
+    device.scheduleAlarm(decision.nextChange)
+    device.scheduleNightLightStep(nightLightStep)
     try {
-      status.show(StatusNotice.of(decision, env.clock, failures))
+      device.showStatus(StatusNotice.of(decision, env.clock, failures))
     } catch (ex: Exception) {
-      android.util.Log.e("AallAutomation", "Failed to show status notification", ex)
+      device.logError("Failed to show status notification", ex)
       failures.add("No se ha podido mostrar la notificación.")
     }
     put("effectFailures", JSONArray(failures).toString())
   }
 
   private fun environment(plugged: Boolean? = null): Environment {
-    val battery = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-    val launcher = context.packageManager.resolveActivity(
-      Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
-      0
-    )?.activityInfo?.packageName
-    val foreground = AallAccessibilityService.instance?.foreground ?: ""
-    val systemApp = try {
-      val flags = context.packageManager.getApplicationInfo(foreground, 0).flags
-      flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
-    } catch (_: PackageManager.NameNotFoundException) {
-      false
-    }
-    val dialer = context.getSystemService(TelecomManager::class.java)?.defaultDialerPackage
+    val foreground = device.foreground
     return Environment(
       clock = clock(),
       foreground = foreground,
-      foregroundIsSystemApp = systemApp,
-      foregroundApp = AallAccessibilityService.instance?.foregroundApp ?: "",
-      alwaysAllowed = Rules.alwaysAllowed + listOfNotNull(context.packageName, launcher, dialer),
-      plugged = plugged ?: ((battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0),
-      permissions = permissions()
+      foregroundIsSystemApp = device.isSystemApp(foreground),
+      foregroundApp = device.foregroundApp,
+      alwaysAllowed = Rules.alwaysAllowed + device.alwaysAllowed(),
+      plugged = plugged ?: device.plugged(),
+      permissions = device.permissions()
     )
   }
 
-  private fun permissions() = Permissions(
-    accessibility = AallAccessibilityService.instance != null,
-    dnd = notification.isNotificationPolicyAccessGranted,
-    alarms = alarm.canScheduleExactAlarms(),
-    grayscale = context.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") ==
-      PackageManager.PERMISSION_GRANTED
-  )
-
-  private fun applyDnd(on: Boolean) = notification.setInterruptionFilter(
-    if (on) {
-      NotificationManager.INTERRUPTION_FILTER_PRIORITY
-    } else {
-      NotificationManager.INTERRUPTION_FILTER_ALL
-    }
-  )
-
   private fun applyGrayscale(on: Boolean) = synchronized(displayLock) {
-    val resolver = context.contentResolver
-    val enabled = Settings.Secure.getInt(resolver, "accessibility_display_daltonizer_enabled", 0)
-    val mode = Settings.Secure.getInt(resolver, "accessibility_display_daltonizer", -1)
+    val enabled = device.getSecure("accessibility_display_daltonizer_enabled", 0)
+    val mode = device.getSecure("accessibility_display_daltonizer", -1)
     if (on && !prefs.getBoolean("grayOwned", false)) {
-      prefs.edit().putInt(
-        "grayBeforeEnabled",
-        enabled
-      ).putInt("grayBeforeMode", mode).putBoolean("grayOwned", true).commit()
-      check(Settings.Secure.putInt(resolver, "accessibility_display_daltonizer", 0))
-      check(Settings.Secure.putInt(resolver, "accessibility_display_daltonizer_enabled", 1))
+      prefs.write(
+        mapOf("grayBeforeEnabled" to enabled, "grayBeforeMode" to mode, "grayOwned" to true)
+      )
+      check(device.putSecure("accessibility_display_daltonizer", 0))
+      check(device.putSecure("accessibility_display_daltonizer_enabled", 1))
     } else if (!on && prefs.getBoolean("grayOwned", false)) {
       if (enabled == 1 && mode == 0) {
-        Settings.Secure.putInt(
-          resolver,
-          "accessibility_display_daltonizer",
-          prefs.getInt("grayBeforeMode", -1)
-        )
-        Settings.Secure.putInt(
-          resolver,
+        device.putSecure("accessibility_display_daltonizer", prefs.getInt("grayBeforeMode", -1))
+        device.putSecure(
           "accessibility_display_daltonizer_enabled",
           prefs.getInt("grayBeforeEnabled", 0)
         )
       }
-      prefs.edit().putBoolean("grayOwned", false).commit()
+      prefs.write(mapOf("grayOwned" to false))
     }
   }
 
@@ -243,36 +185,29 @@ class Engine(private val context: Context) {
     val raw = prefs.getString("nightLightSession", null)
     val session = raw?.let { store.parseNightLightSession(JSONObject(it)) }
     if (ramp == null && session == null) return null
-    val resolver = context.contentResolver
     val read = NightLightSettings(
-      Settings.Secure.getInt(resolver, "night_display_activated", 0),
-      Settings.Secure.getInt(resolver, "night_display_color_temperature", -1),
-      Settings.Secure.getInt(resolver, "night_display_auto_mode", -1)
+      device.getSecure("night_display_activated", 0),
+      device.getSecure("night_display_color_temperature", -1),
+      device.getSecure("night_display_auto_mode", -1)
     )
-    val step = NightLight.advance(session, read, ramp, now, nightLightRange())
+    val step = NightLight.advance(session, read, ramp, now, device.nightLightRange())
     // Saved before writing and removed after, so a failure can't lose the user's settings.
     val next = step.session?.let { store.nightLightSessionJson(it).toString() }
     if (next != null && next != raw) {
-      check(prefs.edit().putString("nightLightSession", next).commit())
+      check(prefs.write(mapOf("nightLightSession" to next)))
     }
     // Android reads the schedule last, so restoring it lets Android settle the final state.
     if (step.settings.temperature != read.temperature) {
-      check(
-        Settings.Secure.putInt(
-          resolver,
-          "night_display_color_temperature",
-          step.settings.temperature
-        )
-      )
+      check(device.putSecure("night_display_color_temperature", step.settings.temperature))
       refreshNightLightMatrix()
     }
     if (step.settings.activated != read.activated) {
-      check(Settings.Secure.putInt(resolver, "night_display_activated", step.settings.activated))
+      check(device.putSecure("night_display_activated", step.settings.activated))
     }
     if (step.settings.autoMode != read.autoMode) {
-      check(Settings.Secure.putInt(resolver, "night_display_auto_mode", step.settings.autoMode))
+      check(device.putSecure("night_display_auto_mode", step.settings.autoMode))
     }
-    if (next == null) check(prefs.edit().remove("nightLightSession").commit())
+    if (next == null) check(prefs.write(mapOf("nightLightSession" to null)))
     if (ramp == null || step.session?.yielded == true) null else NightLight.nextStep(ramp, now)
   }
 
@@ -282,72 +217,23 @@ class Engine(private val context: Context) {
    * set, so only the matrix changes. With grayscale on, it has to leave grayscale for a moment.
    */
   private fun refreshNightLightMatrix() {
-    val resolver = context.contentResolver
     val enabledKey = "accessibility_display_daltonizer_enabled"
     val modeKey = "accessibility_display_daltonizer"
-    if (Settings.Secure.getInt(resolver, enabledKey, 0) == 1) {
-      check(Settings.Secure.putInt(resolver, enabledKey, 0))
-      check(Settings.Secure.putInt(resolver, enabledKey, 1))
+    if (device.getSecure(enabledKey, 0) == 1) {
+      check(device.putSecure(enabledKey, 0))
+      check(device.putSecure(enabledKey, 1))
       return
     }
-    val mode = Settings.Secure.getInt(resolver, modeKey, -1)
-    check(Settings.Secure.putInt(resolver, modeKey, -1))
-    check(Settings.Secure.putInt(resolver, enabledKey, 1))
-    check(Settings.Secure.putInt(resolver, enabledKey, 0))
-    check(Settings.Secure.putInt(resolver, modeKey, mode))
-  }
-
-  private fun nightLightRange(): IntRange {
-    val resources = android.content.res.Resources.getSystem()
-
-    fun config(name: String, fallback: Int): Int {
-      val id = resources.getIdentifier(name, "integer", "android")
-      return if (id != 0) resources.getInteger(id) else fallback
-    }
-    return config(
-      "config_nightDisplayColorTemperatureMin",
-      2596
-    )..config("config_nightDisplayColorTemperatureMax", 4082)
-  }
-
-  /** Doesn't wake the phone, because nobody sees the screen while it sleeps. The step fires on wake. */
-  private fun scheduleNightLightStep(next: Long?) {
-    val pending = PendingIntent.getBroadcast(
-      context,
-      1,
-      Intent(context, AutomationReceiver::class.java),
-      PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    )
-    if (next == null) {
-      alarm.cancel(pending)
-    } else if (alarm.canScheduleExactAlarms()) {
-      alarm.setExactAndAllowWhileIdle(AlarmManager.RTC, next, pending)
-    } else {
-      alarm.setAndAllowWhileIdle(AlarmManager.RTC, next, pending)
-    }
-  }
-
-  private fun scheduleAlarm(next: Long) {
-    val pending = PendingIntent.getBroadcast(
-      context,
-      0,
-      Intent(context, AutomationReceiver::class.java),
-      PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    )
-    if (alarm.canScheduleExactAlarms()) {
-      alarm.setExactAndAllowWhileIdle(
-        AlarmManager.RTC_WAKEUP,
-        next,
-        pending
-      )
-    } else {
-      alarm.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next, pending)
-    }
+    val mode = device.getSecure(modeKey, -1)
+    check(device.putSecure(modeKey, -1))
+    check(device.putSecure(enabledKey, 1))
+    check(device.putSecure(enabledKey, 0))
+    check(device.putSecure(modeKey, mode))
   }
 
   private fun snapshot(d: Decision): JSONObject {
     val clock = clock()
-    val p = permissions()
+    val p = device.permissions()
     val failures = JSONArray(prefs.getString("effectFailures", "[]")).let { a ->
       (0 until a.length()).map(a::getString)
     }
@@ -374,7 +260,7 @@ class Engine(private val context: Context) {
           "accessibility",
           p.accessibility
         ).put("dnd", p.dnd).put("alarms", p.alarms).put("grayscale", p.grayscale)
-          .put("notifications", status.enabled())
+          .put("notifications", device.notificationsEnabled())
       )
       .put(
         "overrides",

@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Bundle
+import dev.danields.aall.core.StatusNotice
 
 class StatusNotifier(private val context: Context, private val prefs: SharedPreferences) {
   private val manager get() = context.getSystemService(NotificationManager::class.java)

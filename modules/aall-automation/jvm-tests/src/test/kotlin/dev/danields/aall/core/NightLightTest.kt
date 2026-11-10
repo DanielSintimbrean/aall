@@ -1,4 +1,4 @@
-package dev.danields.aall.automation
+package dev.danields.aall.core
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

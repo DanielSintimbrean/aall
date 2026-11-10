@@ -1,13 +1,26 @@
-package dev.danields.aall.automation
+package dev.danields.aall.core
 
-import android.content.Context
 import java.time.LocalDate
 import org.json.JSONArray
 import org.json.JSONObject
 
-class Store(context: Context) {
-  val prefs = context.getSharedPreferences("automation", Context.MODE_PRIVATE)!!
+/** Typed like SharedPreferences, because the phone already holds values of these types. */
+interface KeyValue {
+  fun contains(key: String): Boolean
 
+  fun getString(key: String, fallback: String?): String?
+
+  fun getLong(key: String, fallback: Long): Long
+
+  fun getInt(key: String, fallback: Int): Int
+
+  fun getBoolean(key: String, fallback: Boolean): Boolean
+
+  /** Writes String, Long, Int or Boolean values at once, and removes keys mapped to null. */
+  fun write(changes: Map<String, Any?>): Boolean
+}
+
+class Store(val prefs: KeyValue) {
   fun hasConfig() = prefs.contains("config")
 
   fun load() = State(
@@ -32,49 +45,45 @@ class Store(context: Context) {
 
   fun save(before: State, after: State) {
     if (before == after) return
-    val edit = prefs.edit()
-    if (before.config != after.config) edit.putString("config", after.config.toJson().toString())
+    val edit = mutableMapOf<String, Any?>()
+    if (before.config != after.config) edit["config"] = after.config.toJson().toString()
     for (kind in RoutineKind.entries) {
       if (before.overrides[kind] != after.overrides[kind]) {
         val o = after.overrides[kind]
         if (o == null) {
-          edit.remove(overrideKey(kind))
+          edit[overrideKey(kind)] = null
         } else {
-          edit.putString(
-            overrideKey(kind),
+          edit[overrideKey(kind)] =
             JSONObject().put(
               "routine",
               o.routine.toJson()
             ).put("date", o.date.toString()).put("until", o.until).toString()
-          )
         }
       }
     }
     if (before.daysOff != after.daysOff) {
-      edit.putString("daysOff", JSONArray(after.daysOff).toString())
+      edit["daysOff"] = JSONArray(after.daysOff).toString()
     }
     for (key in timerKeys) {
       if (before.timers[key] != after.timers[key]) {
         val t = after.timers[key]
         if (t == null) {
-          edit.remove(key)
+          edit[key] = null
         } else {
-          edit.putString(
-            key,
+          edit[key] =
             JSONObject().put(
               "boot",
               t.boot
             ).put("elapsed", t.elapsed).put("wall", t.wall).put("duration", t.duration).toString()
-          )
         }
       }
     }
     if (before.bedtimeDate != after.bedtimeDate) {
-      edit.putString("bedtimeDate", after.bedtimeDate?.toString())
+      edit["bedtimeDate"] = after.bedtimeDate?.toString()
     }
-    if (before.bedtimeUntil != after.bedtimeUntil) edit.putLong("bedtimeUntil", after.bedtimeUntil)
-    if (before.dndOwned != after.dndOwned) edit.putBoolean("dndOwned", after.dndOwned)
-    check(edit.commit())
+    if (before.bedtimeUntil != after.bedtimeUntil) edit["bedtimeUntil"] = after.bedtimeUntil
+    if (before.dndOwned != after.dndOwned) edit["dndOwned"] = after.dndOwned
+    check(prefs.write(edit))
   }
 
   fun nightLightSessionJson(s: NightLightSession) = JSONObject()

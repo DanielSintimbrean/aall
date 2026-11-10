@@ -1,4 +1,4 @@
-package dev.danields.aall.automation
+package dev.danields.aall.core
 
 import kotlin.math.roundToInt
 

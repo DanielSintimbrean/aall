@@ -5,11 +5,14 @@ java = "25.0.5+8.0.LTS"
 android-sdk = "23.0"
 vp = "1.5.0"
 ktlint = "1.8.0"
+gradle = "9.9.0"
 
 [tasks.install]
 run = "pnpm install --frozen-lockfile"
 [tasks.check]
-run = "pnpm typecheck && pnpm check && pnpm test"
+run = "pnpm typecheck && pnpm check && pnpm test && mise run test:kotlin"
+[tasks."test:kotlin"]
+run = "gradle -p modules/aall-automation/jvm-tests test --console=plain -q"
 [tasks.android]
 run = "pnpm android"
 [tasks.apk]

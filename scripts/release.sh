@@ -11,6 +11,7 @@ export AALL_VERSION_CODE="${AALL_VERSION_CODE:-$(date +%s)}"
 pnpm typecheck
 pnpm check
 pnpm test --run
+mise run test:kotlin
 pnpm build:apk
 signer="$ANDROID_HOME/build-tools/37.0.0/apksigner"
 "$signer" sign --ks "$AALL_KEYSTORE" --ks-key-alias aall --ks-pass "file:$AALL_PASSWORD_FILE" --out artifacts/aall-signed.apk artifacts/aall.apk

@@ -18,6 +18,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import dev.danields.aall.core.BlockNotice
 
 /** The full-screen view shown over a blocked app. Colors follow the app's tokens in src/theme.ts. */
 class BlockScreen(

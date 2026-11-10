@@ -10,6 +10,9 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityWindowInfo
 import android.view.inputmethod.InputMethodManager
+import dev.danields.aall.core.BlockNotice
+import dev.danields.aall.core.Clock
+import dev.danields.aall.core.Decision
 
 class AallAccessibilityService : AccessibilityService() {
   companion object {
@@ -36,7 +39,7 @@ class AallAccessibilityService : AccessibilityService() {
       Context.RECEIVER_NOT_EXPORTED
     )
     powerRegistered = true
-    Engine(this).reconcile()
+    engine(this).reconcile()
   }
 
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -61,7 +64,7 @@ class AallAccessibilityService : AccessibilityService() {
       (event.className == "com.android.quickstep.RecentsActivity" && isSystemApp(pkg))
     if (!systemUi) foregroundApp = pkg
     foreground = if (systemUi) SYSTEM_UI else pkg
-    Engine(this).reconcile()
+    engine(this).reconcile()
   }
 
   /** An overlay can keep focus while the application underneath changes. */
@@ -80,7 +83,7 @@ class AallAccessibilityService : AccessibilityService() {
     if (pkg == foreground || (pkg == packageName && overlay != null)) return
     foregroundApp = pkg
     foreground = pkg
-    Engine(this).reconcile()
+    engine(this).reconcile()
   }
 
   private fun isSystemApp(pkg: String) = try {
@@ -108,7 +111,7 @@ class AallAccessibilityService : AccessibilityService() {
     }, onOpen = {
       foregroundApp = packageName
       foreground = packageName
-      Engine(this).reconcile()
+      engine(this).reconcile()
       startActivity(
         packageManager.getLaunchIntentForPackage(packageName)!!
           .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

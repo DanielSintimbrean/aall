@@ -1,4 +1,4 @@
-package dev.danields.aall.movent
+package dev.danields.aall.core
 
 import java.time.ZonedDateTime
 import org.junit.Assert.assertEquals

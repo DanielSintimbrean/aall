@@ -20,20 +20,20 @@ class AallAutomationModule : Module() {
       context.getSystemService(android.app.LocaleManager::class.java).applicationLocales =
         android.os.LocaleList.forLanguageTags("es-ES")
     }
-    Function("initialize") { raw: String -> Engine(context).initialize(raw) }
-    Function("getSnapshot") { Engine(context).snapshot().toString() }
-    Function("reconcile") { Engine(context).reconcile() }
-    Function("setFocusMinutes") { minutes: Int -> Engine(context).setFocusMinutes(minutes) }
-    Function("saveWeekly") { raw: String -> Engine(context).saveWeekly(raw) }
-    Function("requestTurnOff") { id: String -> Engine(context).requestTurnOff(id) }
-    Function("cancelTurnOff") { id: String -> Engine(context).cancelTurnOff(id) }
-    Function("startFocus") { Engine(context).focus() }
-    Function("challenge") { Engine(context).challenge() }
-    Function("solve") { answer: String -> Engine(context).solve(answer) }
-    Function("bookDay") { date: String -> Engine(context).book(date) }
-    Function("cancelDay") { date: String -> Engine(context).cancel(date) }
-    Function("overrideToday") { id: String, raw: String -> Engine(context).overrideToday(id, raw) }
-    Function("testGrayscale") { enabled: Boolean -> Engine(context).testGray(enabled) }
+    Function("initialize") { raw: String -> engine(context).initialize(raw) }
+    Function("getSnapshot") { engine(context).snapshot().toString() }
+    Function("reconcile") { engine(context).reconcile() }
+    Function("setFocusMinutes") { minutes: Int -> engine(context).setFocusMinutes(minutes) }
+    Function("saveWeekly") { raw: String -> engine(context).saveWeekly(raw) }
+    Function("requestTurnOff") { id: String -> engine(context).requestTurnOff(id) }
+    Function("cancelTurnOff") { id: String -> engine(context).cancelTurnOff(id) }
+    Function("startFocus") { engine(context).focus() }
+    Function("challenge") { engine(context).challenge() }
+    Function("solve") { answer: String -> engine(context).solve(answer) }
+    Function("bookDay") { date: String -> engine(context).book(date) }
+    Function("cancelDay") { date: String -> engine(context).cancel(date) }
+    Function("overrideToday") { id: String, raw: String -> engine(context).overrideToday(id, raw) }
+    Function("testGrayscale") { enabled: Boolean -> engine(context).testGray(enabled) }
     Function("installedApps") {
       context.packageManager.queryIntentActivities(
         Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
