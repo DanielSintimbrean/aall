@@ -1,4 +1,4 @@
-package dev.danields.aall.automation
+package dev.danields.aall.core
 
 import java.time.LocalTime
 import org.json.JSONArray

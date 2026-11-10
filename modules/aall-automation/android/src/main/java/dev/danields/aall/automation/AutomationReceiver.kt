@@ -6,7 +6,7 @@ import android.content.Intent
 class AutomationReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
     if (intent.action == StatusNotifier.ACTION_DISMISSED) {
-      StatusNotifier.dismissed(Store(context).prefs, intent.getStringExtra(StatusNotifier.KEY))
+      StatusNotifier.dismissed(prefs(context), intent.getStringExtra(StatusNotifier.KEY))
       return
     }
     // Android 17 sends the power action before it updates the sticky battery status.
@@ -15,6 +15,6 @@ class AutomationReceiver : BroadcastReceiver() {
       Intent.ACTION_POWER_DISCONNECTED -> false
       else -> null
     }
-    Engine(context).reconcile(plugged)
+    engine(context).reconcile(plugged)
   }
 }

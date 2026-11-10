@@ -18,7 +18,7 @@ sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0' 'ndk;27.1.12297006'
 sdkmanager 'emulator' 'system-images;android-37.0;google_apis;x86_64'
 ```
 
-`mise run check` runs typecheck, Vite+ and ktlint formatting and lint, and the TypeScript tests. `pnpm format` applies both formatters. The native JVM tests run inside `pnpm build:apk`. `pnpm start` and `pnpm android` give a development client; Expo Go can't load the native module.
+`mise run check` runs typecheck, Vite+ and ktlint formatting and lint, the TypeScript tests, and the Kotlin tests. `pnpm format` applies both formatters. `mise run test:kotlin` runs only the Kotlin tests, on the plain JVM. `pnpm start` and `pnpm android` give a development client; Expo Go can't load the native module.
 
 `pnpm build:apk` builds arm64 only, so set `AALL_ABIS=x86_64` for an emulator. Set `AALL_VERSION_CODE=$(date +%s)` too, or Android refuses to install it over a newer build. The APK is signed with Expo's development key, so it can't update a release install: switching keys means uninstalling, and uninstalling deletes the settings.
 
