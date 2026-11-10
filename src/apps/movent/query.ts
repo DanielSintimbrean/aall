@@ -6,4 +6,6 @@ export const boardQuery = queryOptions({
   queryFn: () => fetchBoard(Date.now()),
   // The notification keeps showing the last board while offline, however long that lasts.
   gcTime: Infinity,
+  // A retry pauses while aall is in the background, and every later tick would wait on it.
+  retry: false,
 });
