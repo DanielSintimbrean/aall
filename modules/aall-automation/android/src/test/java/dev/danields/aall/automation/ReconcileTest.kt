@@ -55,6 +55,21 @@ class ReconcileTest {
     allowed: Set<String> = emptySet()
   ) = Reconcile.decide(state, Environment(clock, foreground, allowed, plugged, permissions))
 
+  @Test fun essentialUtilitiesStayAccessibleDuringBedtime() {
+    val night = clock("2026-11-09T23:00:00")
+    val utilities = listOf(
+      "com.android.settings", "com.android.settings.intelligence",
+      "com.android.providers.downloads", "com.android.providers.downloads.ui",
+      "com.android.documentsui", "com.google.android.documentsui",
+      "com.google.android.apps.nbu.files", "com.amaze.filemanager",
+      "com.android.packageinstaller", "com.android.certinstaller"
+    )
+    for (pkg in utilities) {
+      assertFalse(pkg, decide(state(bedtime), night, pkg, allowed = Rules.alwaysAllowed).blocked)
+    }
+    assertTrue(decide(state(bedtime), night, "game", allowed = Rules.alwaysAllowed).blocked)
+  }
+
   private fun kinds(d: Decision) = d.routines.map { it.kind }
 
   private val nightLight = routine(
