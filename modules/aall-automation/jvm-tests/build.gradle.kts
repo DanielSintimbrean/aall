@@ -10,3 +10,8 @@ sourceSets.main {
 dependencies { implementation("org.json:json:20250517"); testImplementation("junit:junit:4.13.2") }
 // At quiet level, so `gradle -q` still names a failing test and why.
 tasks.test { testLogging.quiet { events("failed"); exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL } }
+tasks.test {
+  val limits = file("../../../src/limits.json")
+  inputs.file(limits)
+  systemProperty("aall.limits", limits.absolutePath)
+}

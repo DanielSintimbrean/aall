@@ -12,7 +12,7 @@ import { defaults, type RoutineId } from "./model";
 const begin = (id: RoutineId) => {
   const routine = defaults.routines.find((r) => r.id === id);
   if (!routine) throw Error(`No default ${id}`);
-  return beginDraft(routine, 50);
+  return beginDraft({ ...routine, title: id }, 50);
 };
 const apply = (id: RoutineId, ...edits: DraftEdit[]) => edits.reduce(editDraft, begin(id));
 const step = (value: string, by: number) =>
