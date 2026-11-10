@@ -160,23 +160,31 @@ class Engine(private val device: Device, private val prefs: KeyValue) {
   }
 
   private fun applyGrayscale(on: Boolean) = synchronized(displayLock) {
-    val enabled = device.getSecure("accessibility_display_daltonizer_enabled", 0)
-    val mode = device.getSecure("accessibility_display_daltonizer", -1)
-    if (on && !prefs.getBoolean("grayOwned", false)) {
-      prefs.write(
-        mapOf("grayBeforeEnabled" to enabled, "grayBeforeMode" to mode, "grayOwned" to true)
-      )
-      check(device.putSecure("accessibility_display_daltonizer", 0))
-      check(device.putSecure("accessibility_display_daltonizer_enabled", 1))
-    } else if (!on && prefs.getBoolean("grayOwned", false)) {
-      if (enabled == 1 && mode == 0) {
-        device.putSecure("accessibility_display_daltonizer", prefs.getInt("grayBeforeMode", -1))
-        device.putSecure(
-          "accessibility_display_daltonizer_enabled",
-          prefs.getInt("grayBeforeEnabled", 0)
+    val enabledKey = "accessibility_display_daltonizer_enabled"
+    val modeKey = "accessibility_display_daltonizer"
+    val owned = if (prefs.getBoolean("grayOwned", false)) {
+      ColorCorrection(prefs.getInt("grayBeforeEnabled", 0), prefs.getInt("grayBeforeMode", -1))
+    } else {
+      null
+    }
+    val read = ColorCorrection(device.getSecure(enabledKey, 0), device.getSecure(modeKey, -1))
+    val step = Grayscale.advance(owned, read, on)
+    step.write?.let {
+      check(device.putSecure(modeKey, it.mode))
+      check(device.putSecure(enabledKey, it.enabled))
+    }
+    if (step.owned != owned) {
+      check(
+        prefs.write(
+          step.owned?.let {
+            mapOf(
+              "grayOwned" to true,
+              "grayBeforeEnabled" to it.enabled,
+              "grayBeforeMode" to it.mode
+            )
+          } ?: mapOf("grayOwned" to false)
         )
-      }
-      prefs.write(mapOf("grayOwned" to false))
+      )
     }
   }
 
