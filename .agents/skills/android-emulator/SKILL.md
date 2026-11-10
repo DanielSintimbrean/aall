@@ -24,7 +24,7 @@ The AVD starts fresh: Android defaults, all routines off. Reuse it for every che
 
 ## Driving the UI
 
-- Relaunch aall with `agent-device open` and no `--relaunch`. Force-stopping aall removes its accessibility service.
+- Relaunch aall with `agent-device open` and no `--relaunch`. Force-stopping aall removes its accessibility service; on the emulator, `scripts/emulator.sh setup` turns it back on.
 - After a snapshot, run `adb -s "$serial" shell am force-stop com.callstack.agentdevice.snapshothelper`. The helper keeps every accessibility service suspended until it stops, and stopping it restores them without touching any permission.
 - `uiautomator dump` suspends accessibility while it runs, which adds warnings and shifts Today's layout. On Today, wait for two identical dumps before trusting coordinates. Confirm permission state from a plain screenshot.
 - Prove grayscale and Night Light with `adb -s "$serial" shell settings get` and `dumpsys SurfaceFlinger`. Screenshots don't show either.
@@ -33,7 +33,15 @@ The AVD starts fresh: Android defaults, all routines off. Reuse it for every che
 
 Use it only when behavior must be proven on real hardware. The user may be holding it, and other sessions may install on it at the same time.
 
-- Install only an APK signed with the release key, with `adb -s 3B291FDJG004K7 install -r`. A different key forces an uninstall, which deletes the user's settings.
+- Install only an APK signed with the release key. A different key forces an uninstall, which deletes the user's settings. `pnpm release` publishes and uses up a tag, so sign by hand:
+  ```sh
+  AALL_VERSION_CODE=$(date +%s) pnpm build:apk
+  "$ANDROID_HOME/build-tools/37.0.0/apksigner" sign --ks ~/.local/share/aall/signing/aall.jks \
+    --ks-key-alias aall --ks-pass file:$HOME/.local/share/aall/signing/password \
+    --out artifacts/aall-signed.apk artifacts/aall.apk
+  adb -s 3B291FDJG004K7 install -r artifacts/aall-signed.apk
+  ```
+- If aall's accessibility service was removed, append it to `enabled_accessibility_services` and keep the launcher's entry. `scripts/emulator.sh setup` overwrites the list, so never run it against the phone.
 - Check the focused window (`adb -s 3B291FDJG004K7 shell dumpsys window | grep mCurrentFocus`) right before every tap, and take a fresh screenshot after BACK. A pulled-down shade or a landscape Settings screen moves the target.
 - Check `lastUpdateTime` in `dumpsys package dev.danields.aall` before trusting the build on screen.
 - Enable a routine only during a pause or with the screen title verified, and restore every setting you changed before handing back.

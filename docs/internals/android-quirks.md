@@ -1,6 +1,6 @@
 # Android quirks
 
-What Android does on the Pixel 8 Pro (GrapheneOS, Android 17) that its documentation doesn't say, and that aall's code depends on. Each fact was measured on the phone or an Android 17 emulator.
+What Android does on the Pixel 8 Pro (GrapheneOS, Android 17) that its documentation doesn't say, and that aall's code or tooling depends on.
 
 ## Display
 
@@ -8,7 +8,6 @@ What Android does on the Pixel 8 Pro (GrapheneOS, Android 17) that its documenta
 - `display_color_mode` would also recompute the matrix, but only `adb shell` may write it. The app gets "You cannot change private secure settings".
 - Screenshots show neither grayscale nor Night Light, and reading the settings back doesn't prove the screen changed. Only `colorTransformMatrix` in `dumpsys SurfaceFlinger` shows what the display applies. With both on, the matrix combines them.
 - The temperature limits come from `config_nightDisplayColorTemperatureMin` and `Max`. On this phone they are 686 K and 4082 K, not AOSP's usual 2596 K minimum, so 50% intensity is 2384 K.
-- Android's own Night Light schedule (`night_display_auto_mode`) can switch the filter off in the middle of a window, so aall turns it off while a ramp runs.
 
 ## Charging
 
@@ -21,6 +20,7 @@ What Android does on the Pixel 8 Pro (GrapheneOS, Android 17) that its documenta
 - aall's own blocking overlay can hold focus while a permitted app opens with no window state event. When the overlay is the active window, aall reads the application window below it.
 - Keyboard popups, such as accents and emoji, are separate windows from the keyboard's `SoftInputWindow`. aall ignores every window from an enabled keyboard.
 - `resolveActivity` for `ACTION_MAIN` + `CATEGORY_HOME` returns `com.android.settings` instead of the real launcher unless the manifest declares the HOME intent under `queries`.
+- The phone's launcher, Kvaesitso, runs its own accessibility service, so `enabled_accessibility_services` holds both.
 - A sideloaded app may need **Allow restricted settings** in Android's app info before accessibility can be turned on.
 
 ## Test tools
@@ -42,7 +42,6 @@ What Android does on the Pixel 8 Pro (GrapheneOS, Android 17) that its documenta
 
 The JVM tests cover the rule boundaries. These need real elapsed time, a change in the phone's state, or hardware the emulator lacks:
 
-- Focus DND, the blocking overlay and the arithmetic pause, repeated since the logic moved into `Reconcile`.
 - A real reboot, timezone change and clock change, including a turn-off notice and Night Light window across a reboot.
 - Bedtime overnight through wake-up, started by a real cable change, with DND access granted.
 - A day-off midnight transition, and a full 15-minute pause while the phone is idle.
