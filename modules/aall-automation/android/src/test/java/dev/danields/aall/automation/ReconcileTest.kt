@@ -70,6 +70,22 @@ class ReconcileTest {
     assertTrue(decide(state(bedtime), night, "game", allowed = Rules.alwaysAllowed).blocked)
   }
 
+  @Test fun systemAppsStayAccessibleDuringBedtimeButExplicitBlocksStillApply() {
+    val env = Environment(
+      clock("2026-11-09T23:00:00"),
+      "system.launcher",
+      emptySet(),
+      false,
+      allow,
+      foregroundIsSystemApp = true
+    )
+    assertFalse(Reconcile.decide(state(bedtime), env).blocked)
+    assertTrue(Reconcile.decide(state(bedtime), env.copy(foregroundIsSystemApp = false)).blocked)
+    val access = routine(RoutineKind.ACCESS, apps = listOf(env.foreground))
+    assertTrue(Reconcile.decide(state(bedtime, access), env).blocked)
+    assertEquals(true, Reconcile.decide(state(bedtime), env).setGrayscale)
+  }
+
   private fun kinds(d: Decision) = d.routines.map { it.kind }
 
   private val nightLight = routine(
