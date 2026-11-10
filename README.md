@@ -1,8 +1,6 @@
 # aall
 
-Personal Android routines with on-phone editing. React Native, Expo and Uniwind provide the UI; a local Kotlin Expo module owns persistence, scheduling and enforcement. No account or backend. [DESIGN.md](DESIGN.md) specifies the behavior.
-
-All routines start disabled. Turning one on is instant; turning one off takes 72 elapsed hours of notice, which "Keep on" cancels. Today shows scheduled activity, missing permissions and any "only today" hours in effect. Saving weekly settings ends that routine's "only today" change. Editors configure allowed hours for app access, active grayscale hours, bedtime, weekdays and per-routine app lists. Night Light warms the screen gradually over a chosen duration, up to a chosen intensity, and gives Android's own settings back when its window ends. Focus defaults to 50 minutes. An arithmetic challenge pauses every restriction for 15 minutes. Days off suppress all restrictions for a local calendar date and require 72 elapsed hours of notice.
+Personal Android routines, edited on the phone: app blocking, focus, bedtime, grayscale and a Night Light ramp, plus days off and a short arithmetic pause. A React Native and Expo UI sits on a local Kotlin Expo module that owns persistence, scheduling and enforcement, with no account or backend. It adds personal friction, not tamper-proof enforcement. [docs/internals/design.md](docs/internals/design.md) specifies the behavior.
 
 ## Development
 
@@ -11,37 +9,36 @@ mise install
 pnpm install --frozen-lockfile
 mise run check
 pnpm build:apk
-adb install -r artifacts/aall.apk
 ```
 
-Android SDK platform 37.0, build tools 37.0.0 and NDK 27.1.12297006 are required. Install them with `sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0' 'ndk;27.1.12297006'`. Emulators also need `sdkmanager 'emulator' 'system-images;android-37.0;google_apis;x86_64'`. Expo uses Metro for Android. Vite+ runs formatting, lint and shared TypeScript tests. ktlint formats and lints the native Kotlin module. `pnpm check` runs both linters, and `pnpm format` applies both formatters. Native JVM tests run during APK builds. `pnpm start` and `pnpm android` provide a development client. Expo Go cannot load this module.
+The Android SDK needs platform 37.0, build tools 37.0.0 and NDK 27.1.12297006, and emulators need the x86_64 system image:
 
-`pnpm build:apk` builds arm64 only; set `AALL_ABIS=x86_64` for an emulator. Its output uses the generated Expo development signing certificate. Releases are built and signed locally with a persistent private key. Do not use development APKs as an Obtainium update source. Different signing certificates require uninstalling before switching and uninstalling deletes local settings.
+```sh
+sdkmanager 'platforms;android-37.0' 'build-tools;37.0.0' 'ndk;27.1.12297006'
+sdkmanager 'emulator' 'system-images;android-37.0;google_apis;x86_64'
+```
+
+`mise run check` runs typecheck, Vite+ and ktlint formatting and lint, and the TypeScript tests. `pnpm format` applies both formatters. The native JVM tests run inside `pnpm build:apk`. `pnpm start` and `pnpm android` give a development client; Expo Go can't load the native module.
+
+`pnpm build:apk` builds arm64 only, so set `AALL_ABIS=x86_64` for an emulator. Set `AALL_VERSION_CODE=$(date +%s)` too, or Android refuses to install it over a newer build. The APK is signed with Expo's development key, so it can't update a release install: switching keys means uninstalling, and uninstalling deletes the settings.
 
 ## Phone setup
 
-Grant accessibility, DND, exact alarm and notification access from Phone setup. A sideloaded app may need **Allow restricted settings** in Android app info before enabling accessibility.
+Phone setup in the app grants accessibility, DND, exact alarms and notifications. A sideloaded app may need **Allow restricted settings** in Android's app info before accessibility can be turned on.
 
-Grayscale and Night Light require this one-time grant:
+Grayscale and Night Light need a one-time grant:
 
 ```sh
 adb shell pm grant dev.danields.aall android.permission.WRITE_SECURE_SETTINGS
 ```
 
-The setup screen has a ten-second grayscale test and manual restoration. Permission and secure-setting readback alone do not prove that GrapheneOS displays grayscale. Verify on the physical phone. Android Settings, phone calls, the launcher and aall remain accessible. This provides personal friction, not tamper-proof enforcement.
-
-Schedules use local wall time and the starting weekday. Focus and bypass use elapsed time during a boot and recover their remaining wall-clock deadline on reboot. Native alarms, boot/time broadcasts and accessibility events reconcile state without React running. The app reconciles after each action and when it returns to the foreground, and its one-second snapshot poll only reads. Android force-stop suspends an app until the next launch. Day-off midnight boundaries release aall's restrictions without releasing another app's DND rule.
-
-The status notification comes from the native reconcile, so it also updates when React isn't running. Its channel bypasses DND, which Android only allows once aall has DND access. Without the bypass, aall's own DND rule hides it.
-
 ## Releases
 
-The public repository is https://github.com/DanielSintimbrean/aall. Builds and releases run locally. GitHub Actions is not used. Add this repository URL to Obtainium using its GitHub source.
+Releases are built and signed locally and published to GitHub Releases at https://github.com/DanielSintimbrean/aall. GitHub Actions isn't used. On the phone, Obtainium follows that repository as a GitHub source.
 
-Run `pnpm release` after committing the new version. It uses the local signing files in `~/.local/share/aall/signing/`. Override `AALL_KEYSTORE` and `AALL_PASSWORD_FILE` to use different private paths. The script runs checks, builds the standalone APK, signs it, verifies its signature and alignment, and publishes it to GitHub Releases. Bump `package.json` and `app.config.ts` versions before each new release. Version codes default to Unix seconds, increasing across releases. Do not release twice with the same tag.
+1. Bump the version in `package.json` and `app.config.ts`, and commit.
+2. Run `pnpm release`. It runs the checks, builds the APK, signs it with `~/.local/share/aall/signing/aall.jks` and the password file beside it, verifies the signature and alignment, tags the commit and publishes the release. `AALL_KEYSTORE` and `AALL_PASSWORD_FILE` override the paths.
 
-The default key path is `~/.local/share/aall/signing/aall.jks`. Keep a private backup of it and its password. Never recreate the key, because Android rejects updates signed with a different one.
+Version codes default to Unix seconds, so they always increase. Each tag is released once.
 
-## Validation
-
-See [VALIDATION.md](VALIDATION.md) for the latest measured checks and outstanding device tests.
+Keep a private backup of the key and its password. Android rejects an update signed with a different key, so a lost or recreated key means uninstalling, which deletes the settings.

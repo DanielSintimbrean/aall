@@ -99,12 +99,12 @@ export function isDirty(draft?: Draft, original?: Draft) {
   return JSON.stringify(draft) !== JSON.stringify(original);
 }
 
-/** Validates what the routine kind's editor shows, and says which saves are open. */
 export function rampFieldInvalid(routine: Routine, field: RampField) {
   const { min, max } = rampLimits[field];
   return routine[field] < min || routine[field] > max;
 }
 
+/** Validates what the routine kind's editor shows, and says which saves are open. */
 export function checkDraft(draft: Draft, original: Draft | undefined, overridden: boolean) {
   const { routine } = draft;
   const editor = editors[routine.id];

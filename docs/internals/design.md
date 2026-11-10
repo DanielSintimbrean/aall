@@ -17,8 +17,8 @@ The first app, Movent, shows the next 2 hours of buses at Cascada de les Moles (
 ## Agreed behavior
 
 - Each routine has its own blocked-app list; bedtime instead has an allowed-app list.
-- Phone calls, Android Settings, and aall stay accessible.
-- Weekly schedules are normal. "Only today" makes a temporary adjustment.
+- Phone calls, Android Settings, the launcher, and aall stay accessible.
+- Weekly schedules are normal. "Only today" makes a temporary adjustment. Saving weekly settings ends that routine's "Only today" change.
 - A day off provides a calendar day without aall restrictions, including focus and bedtime, and requires a minimum of 72 hours of advance notice before its starting midnight. Cancellation is allowed at any time. Moving a booking requires meeting the 72-hour deadline for the new date.
 - Turning a routine on takes effect at once. Turning off a routine that's on weekly requires 72 elapsed hours of notice, and it keeps following its schedule until then. "Keep on" cancels the notice at any time. "Only today" can't turn a routine off. Editing hours and app lists stays immediate, so it can still weaken a routine.
 - Overlapping routines retain their restrictions independently. Ending focus does not release bedtime restrictions.
@@ -26,8 +26,8 @@ The first app, Movent, shows the next 2 hours of buses at Cascada de les Moles (
 - A correct answer pauses restrictions for 15 minutes. Current routines resume afterward. Wrong answers retry the same expression.
 - Scheduled bedtime starts without requiring charging. Charging during an earlier evening window can start bedtime early. Unplugging does not cancel it. The configured wake-up time ends bedtime.
 - A single silent status notification shows what Today's heading shows: running routines, pause or day off, with a countdown for focus and pause. It goes away when nothing is in effect, and a swiped-away notice stays gone until the status changes. It must stay visible during aall's own DND.
-- Today is the home screen: active routines and their reasons, next change, Start Focus, and shortcuts for times, days, and app lists.
-- One-time ADB setup for grayscale is acceptable, subject to proving it works on the actual phone.
+- Today is the home screen: active routines and their reasons, missing permissions, "Only today" hours in effect, next change, Start Focus, and shortcuts for times, days, and app lists.
+- One-time ADB setup for grayscale is acceptable, subject to proving it works on the actual phone. Phone setup has a ten-second grayscale test and a manual restore.
 - Public GitHub repository, locally built and signed APKs, GitHub Releases, and Obtainium updates. Personal adjustments stay on-device.
 
 ## Initial defaults
@@ -48,7 +48,7 @@ The schedule editor explicitly labels app windows as "Allowed hours" and graysca
 
 - Overnight schedules belong to their starting weekday. Monday 22:30 to 07:00 ends Tuesday morning.
 - An overnight "Only today" adjustment lasts until that occurrence ends, including after midnight, then the weekly schedule resumes.
-- Use phone-local wall-clock time for weekly schedules and elapsed duration for focus and bypass countdowns during a running boot.
+- Use phone-local wall-clock time for weekly schedules and elapsed duration for focus and bypass countdowns during a running boot. After a reboot, focus and bypass keep their remaining wall-clock deadline.
 - Reconcile active routines after reboot, time changes, and timezone changes. Reapply current restrictions after services restart; do not replay actions for intervals that already ended.
 - A bypass does not erase or extend a routine. When it expires, evaluate whatever routines are active then.
 - DND and grayscale requests must be coordinated so one ending routine does not clear another's request. Release only settings owned by aall and avoid overriding user changes.
@@ -61,7 +61,8 @@ The schedule editor explicitly labels app windows as "Allowed hours" and graysca
 - Local Kotlin Expo module for accessibility-based app blocking, native scheduling, charging events, DND, and grayscale integration.
 - Expo Metro for Android bundling. Vite+ runs repository tooling and pure TypeScript tests.
 - mise pins development tools. Pin package dependencies after checking current compatibility.
-- Persist adjustments locally. Use Android scheduling and persisted native-readable routine state so execution does not depend on the React UI staying open.
+- Persist adjustments locally. Use Android scheduling and persisted native-readable routine state so execution does not depend on the React UI staying open. Native alarms, boot and time broadcasts, and accessibility events reconcile without React, and so does the status notification.
+- The app reconciles after each action and when it returns to the foreground. Its one-second snapshot poll only reads.
 - No Tasker, legacy helper, or Shizuku dependency is assumed.
 
 ## Night Light behavior
