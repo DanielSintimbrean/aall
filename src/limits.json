@@ -1,0 +1,9 @@
+{
+  "focusMinutes": { "min": 1, "max": 1440 },
+  "rampMinutes": { "min": 15, "max": 240 },
+  "finalIntensity": { "min": 1, "max": 100 },
+  "earliestChargingStart": "20:00",
+  "maxWindows": 20,
+  "oneWindowRoutines": ["bedtime", "nightLight"],
+  "maxAppsPerList": 1000
+}

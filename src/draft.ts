@@ -1,11 +1,5 @@
-import {
-  earliestChargingStart,
-  editors,
-  parseMinutes,
-  rampLimits,
-  type Routine,
-  type Window,
-} from "./model";
+import limits from "./limits.json";
+import { editors, parseMinutes, type Routine, type Window } from "./model";
 
 /** The unsaved copy of a routine that the editor changes. `minutes` is the focus duration as typed. */
 export type Draft = {
@@ -26,7 +20,7 @@ export type DraftEdit =
   | { type: "stepRamp"; field: RampField; by: number }
   | { type: "toggleApp"; list: "apps" | "colorApps"; packageName: string };
 
-export type RampField = keyof typeof rampLimits;
+export type RampField = "rampMinutes" | "finalIntensity";
 
 export function beginDraft(routine: Routine, minutes: number): Draft {
   return {
@@ -58,7 +52,8 @@ export function editDraft(draft: Draft, edit: DraftEdit): Draft {
       return { ...draft, minutes: edit.value.replace(/\D/g, "") };
     case "stepMinutes": {
       const current = Number(draft.minutes) || 0;
-      return { ...draft, minutes: String(Math.min(1440, Math.max(1, current + edit.by))) };
+      const { min, max } = limits.focusMinutes;
+      return { ...draft, minutes: String(Math.min(max, Math.max(min, current + edit.by))) };
     }
     case "setWindowTime":
       return editWindow(draft, edit.index, (window) => ({ ...window, ...edit.time }));
@@ -83,7 +78,7 @@ export function editDraft(draft: Draft, edit: DraftEdit): Draft {
     case "setRamp":
       return editRoutine(draft, { [edit.field]: Number(edit.value.replace(/\D/g, "")) });
     case "stepRamp": {
-      const { min, max } = rampLimits[edit.field];
+      const { min, max } = limits[edit.field];
       const value = draft.routine[edit.field] + edit.by;
       return editRoutine(draft, { [edit.field]: Math.min(max, Math.max(min, value)) });
     }
@@ -100,7 +95,7 @@ export function isDirty(draft?: Draft, original?: Draft) {
 }
 
 export function rampFieldInvalid(routine: Routine, field: RampField) {
-  const { min, max } = rampLimits[field];
+  const { min, max } = limits[field];
   return routine[field] < min || routine[field] > max;
 }
 
@@ -109,7 +104,8 @@ export function checkDraft(draft: Draft, original: Draft | undefined, overridden
   const { routine } = draft;
   const editor = editors[routine.id];
   const minutes = parseMinutes(draft.minutes);
-  const earlyStartInvalid = editor.chargingStart && routine.earlyStart < earliestChargingStart;
+  const earlyStartInvalid =
+    editor.chargingStart && routine.earlyStart < limits.earliestChargingStart;
   const invalid =
     routine.windows.some((window) => !window.days.length) ||
     earlyStartInvalid ||

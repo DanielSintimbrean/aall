@@ -33,7 +33,7 @@ The React UI in `App.tsx` and `src/` is dumb: it polls a read-only snapshot and 
 ## Taste
 
 - Default to no comment. Write one for a constraint, an external quirk or an invariant the code can't show, in one line where you can and four at most. Names, step-by-step narration and history stay out; the PR carries history.
-- Native owns every limit and rule. The UI shows what native decided and never re-implements a rule.
+- Native enforces every rule, because it runs without React. The limits both sides share (ranges, earliest times, window and app counts) live in `src/limits.json`; TS imports it, and `LimitsTest` checks native accepts exactly those. TS owns the defaults and presentation. The UI shows what native decided and never re-implements a rule's logic.
 - React effects only sync with something outside React. Derive in render and act in handlers.
 
 ## Documentation

@@ -10,14 +10,13 @@ import {
 } from "../draft";
 import {
   clockLabel,
-  earliestChargingStart,
   editors,
   isOvernight,
-  rampLimits,
   type InstalledApp,
   type Routine,
   type Window,
 } from "../model";
+import limits from "../limits.json";
 import type { ScreenProps } from "../navigation";
 import { native, saveToday, saveWeekly } from "../native";
 import { useDraft, useStore } from "../store";
@@ -123,6 +122,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
   if (!draft) return null;
   const { routine, minutes } = draft;
   const editor = editors[routine.id];
+  const windowsEditable = !limits.oneWindowRoutines.includes(routine.id);
   const overridden = !!state.overrides[routine.id];
   const weeklyOn = state.config.routines.some((r) => r.id === routine.id && r.enabled);
   const turningOff = state.turningOff[routine.id];
@@ -218,7 +218,11 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
                 onChange={(value) => dispatch({ type: "setMinutes", value })}
                 onStep={(by) => dispatch({ type: "stepMinutes", by })}
               />
-              {parsedMinutes === null && <FieldError>Elige entre 1 y 1440 minutos.</FieldError>}
+              {parsedMinutes === null && (
+                <FieldError>
+                  Elige entre {limits.focusMinutes.min} y {limits.focusMinutes.max} minutos.
+                </FieldError>
+              )}
             </Card>
           </Section>
         )}
@@ -232,13 +236,13 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
                 window={window}
                 index={index}
                 dispatch={dispatch}
-                removable={editor.windowCountEditable}
+                removable={windowsEditable}
               />
             ))}
-            {editor.windowCountEditable && !routine.windows.length && (
+            {windowsEditable && !routine.windows.length && (
               <Notice tone="warn">{editor.noHoursWarning}</Notice>
             )}
-            {editor.windowCountEditable && (
+            {windowsEditable && routine.windows.length < limits.maxWindows && (
               <Button
                 title="Añadir horario"
                 variant="outline"
@@ -274,7 +278,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
                 />
                 {rampFieldInvalid(routine, "rampMinutes") && (
                   <FieldError>
-                    Elige entre {rampLimits.rampMinutes.min} y {rampLimits.rampMinutes.max} minutos.
+                    Elige entre {limits.rampMinutes.min} y {limits.rampMinutes.max} minutos.
                   </FieldError>
                 )}
               </Card>
@@ -310,7 +314,7 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
                 />
                 {rampFieldInvalid(routine, "finalIntensity") ? (
                   <FieldError>
-                    Elige entre {rampLimits.finalIntensity.min} y {rampLimits.finalIntensity.max} %.
+                    Elige entre {limits.finalIntensity.min} y {limits.finalIntensity.max} %.
                   </FieldError>
                 ) : (
                   <Text className="px-1 text-sm text-muted">
@@ -332,11 +336,13 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
                 onChange={(earlyStart) => dispatch({ type: "setEarlyStart", earlyStart })}
               />
               {earlyStartInvalid ? (
-                <FieldError>Elige las {earliestChargingStart} o una hora posterior.</FieldError>
+                <FieldError>
+                  Elige las {limits.earliestChargingStart} o una hora posterior.
+                </FieldError>
               ) : (
                 <Text className="px-1 text-sm text-muted">
-                  A partir de las {earliestChargingStart}. Desconectar el cargador no cancela el
-                  descanso.
+                  A partir de las {limits.earliestChargingStart}. Desconectar el cargador no cancela
+                  el descanso.
                 </Text>
               )}
             </Card>

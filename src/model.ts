@@ -1,3 +1,5 @@
+import limits from "./limits.json";
+
 export type Window = { start: string; end: string; days: number[] };
 export type RoutineId = "access" | "bedtime" | "grayscale" | "focus" | "nightLight";
 export type RoutineStatus = "disabled" | "needsSetup" | "active" | "ready";
@@ -45,7 +47,6 @@ type Editor = {
   hint?: string;
   windowLabel: string;
   cardPrefix?: string;
-  windowCountEditable: boolean;
   noHoursWarning?: string;
   session: boolean;
   chargingStart: boolean;
@@ -54,16 +55,11 @@ type Editor = {
   ramp?: boolean;
   noTurnOffNotice?: boolean;
 };
-export const rampLimits = {
-  rampMinutes: { min: 15, max: 240 },
-  finalIntensity: { min: 1, max: 100 },
-};
 export const editors: Record<RoutineId, Editor> = {
   access: {
     hint: "Las aplicaciones seleccionadas se bloquean fuera del horario permitido.",
     windowLabel: "Horario permitido",
     cardPrefix: "Permitido ",
-    windowCountEditable: true,
     noHoursWarning:
       "Sin un horario permitido, las aplicaciones seleccionadas permanecen bloqueadas todo el día.",
     session: false,
@@ -74,7 +70,6 @@ export const editors: Record<RoutineId, Editor> = {
   focus: {
     hint: "Bloquea las aplicaciones seleccionadas y activa No molestar y la escala de grises durante la sesión.",
     windowLabel: "Horario activo",
-    windowCountEditable: false,
     session: true,
     chargingStart: false,
     appList: "blocked",
@@ -83,7 +78,6 @@ export const editors: Record<RoutineId, Editor> = {
   bedtime: {
     hint: "Bloquea las aplicaciones que no están permitidas y activa No molestar y la escala de grises.",
     windowLabel: "Horario activo",
-    windowCountEditable: false,
     session: false,
     chargingStart: true,
     appList: "allowed",
@@ -92,7 +86,6 @@ export const editors: Record<RoutineId, Editor> = {
   grayscale: {
     hint: "La pantalla se muestra en gris durante el horario activo, excepto en las aplicaciones que conservan el color.",
     windowLabel: "Horario activo",
-    windowCountEditable: true,
     noHoursWarning: "Sin un horario activo, la escala de grises nunca se activa.",
     session: false,
     chargingStart: false,
@@ -101,7 +94,6 @@ export const editors: Record<RoutineId, Editor> = {
   nightLight: {
     hint: "El filtro cálido empieza al inicio del horario, aumenta poco a poco y se apaga al final.",
     windowLabel: "Horario activo",
-    windowCountEditable: false,
     session: false,
     chargingStart: false,
     colorExceptions: false,
@@ -128,13 +120,13 @@ const colorApps = [
   "com.google.android.apps.photos",
   "com.google.android.apps.maps",
 ];
-export const defaults: Config = {
+/** Native names each routine, so the defaults carry no title. */
+export const defaults: Omit<Config, "routines"> & { routines: Omit<Routine, "title">[] } = {
   version: 1,
   focusMinutes: 50,
   routines: [
     {
       id: "access",
-      title: "Acceso a aplicaciones",
       enabled: false,
       windows: [
         { start: "12:30", end: "13:15", days: all },
@@ -148,7 +140,6 @@ export const defaults: Config = {
     },
     {
       id: "focus",
-      title: "Concentración",
       enabled: false,
       windows: [],
       apps: social,
@@ -159,7 +150,6 @@ export const defaults: Config = {
     },
     {
       id: "bedtime",
-      title: "Descanso",
       enabled: false,
       windows: [{ start: "22:30", end: "07:00", days: all }],
       apps: [
@@ -177,7 +167,6 @@ export const defaults: Config = {
     },
     {
       id: "grayscale",
-      title: "Escala de grises",
       enabled: false,
       windows: [
         { start: "09:00", end: "13:00", days: [1, 2, 3, 4, 5] },
@@ -192,7 +181,6 @@ export const defaults: Config = {
     },
     {
       id: "nightLight",
-      title: "Luz nocturna",
       enabled: false,
       windows: [{ start: "21:00", end: "07:00", days: all }],
       apps: [],
@@ -225,7 +213,6 @@ export const weekdays = [
   { id: 6, short: "S", name: "sábado" },
   { id: 7, short: "D", name: "domingo" },
 ] as const;
-export const earliestChargingStart = "20:00";
 export function minutesLeft(until: number, now = Date.now()) {
   return Math.max(0, Math.ceil((until - now) / 60000));
 }
@@ -262,7 +249,8 @@ export function windowsLabel(windows: Window[]) {
 }
 export function parseMinutes(value: string) {
   const minutes = Number(value);
-  return /^\d+$/.test(value) && minutes >= 1 && minutes <= 1440 ? minutes : null;
+  const { min, max } = limits.focusMinutes;
+  return /^\d+$/.test(value) && minutes >= min && minutes <= max ? minutes : null;
 }
 export function dateLabel(value: string) {
   const date = parseDate(value);
