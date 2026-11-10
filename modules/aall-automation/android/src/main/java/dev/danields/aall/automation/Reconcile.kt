@@ -54,7 +54,8 @@ data class Environment(
   val alwaysAllowed: Set<String>,
   val plugged: Boolean,
   val permissions: Permissions,
-  val foregroundApp: String = foreground
+  val foregroundApp: String = foreground,
+  val foregroundIsSystemApp: Boolean = false
 )
 
 data class Decision(
@@ -100,7 +101,10 @@ object Reconcile {
     val gray = routines.any { it.requestsGrayscale(env.foregroundApp) }
     val grayscale =
       (gray || remaining(state, Timer.GRAY_TEST, clock) > 0) && !dayOff && pauseRemaining <= 0
-    val blocked = env.foreground !in env.alwaysAllowed && routines.any { it.blocks(env.foreground) }
+    val blocked = env.foreground !in env.alwaysAllowed && routines.any {
+      it.blocks(env.foreground) &&
+        !(it.kind == RoutineKind.BEDTIME && env.foregroundIsSystemApp)
+    }
     val runningKinds = routines.map { it.kind }
     return Decision(
       state, routines, dayOff, focusRemaining, pauseRemaining,

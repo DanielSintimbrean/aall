@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.BatteryManager
 import android.os.SystemClock
@@ -174,10 +175,18 @@ class Engine(private val context: Context) {
       Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
       0
     )?.activityInfo?.packageName
+    val foreground = AallAccessibilityService.instance?.foreground ?: ""
+    val systemApp = try {
+      val flags = context.packageManager.getApplicationInfo(foreground, 0).flags
+      flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+    } catch (_: PackageManager.NameNotFoundException) {
+      false
+    }
     val dialer = context.getSystemService(TelecomManager::class.java)?.defaultDialerPackage
     return Environment(
       clock = clock(),
-      foreground = AallAccessibilityService.instance?.foreground ?: "",
+      foreground = foreground,
+      foregroundIsSystemApp = systemApp,
       foregroundApp = AallAccessibilityService.instance?.foregroundApp ?: "",
       alwaysAllowed = Rules.alwaysAllowed + listOfNotNull(context.packageName, launcher, dialer),
       plugged = plugged ?: ((battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0),
