@@ -54,7 +54,7 @@ class TodayTest {
 
   @Test fun noticeNamesRunningRoutinesAndTheNextChangeAndGoesWhenNothingRuns() {
     val phone = Phone("2026-11-02T12:00", grayscale("09:00" to "18:00"))
-    assertEquals(StatusNotice("Escala de grises", "Próximo cambio a las 18:00"), phone.notice)
+    assertEquals(StatusNotice("Escala de grises", "Hasta las 18:00"), phone.notice)
     phone.advanceTo("18:00")
     assertNull(phone.notice)
   }

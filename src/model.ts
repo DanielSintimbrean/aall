@@ -25,7 +25,7 @@ export type Snapshot = {
   focusUntil: number;
   turningOff: Partial<Record<RoutineId, number>>;
   pauseUntil: number;
-  nextChange: number;
+  ends: Partial<Record<RoutineId, number>>;
   permissions: {
     accessibility: boolean;
     dnd: boolean;

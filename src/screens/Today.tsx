@@ -38,15 +38,9 @@ const routineIcons: Record<Routine["id"], IconName> = {
   nightLight: "weather-sunset",
 };
 
-function hero(state: Snapshot, now: number) {
-  const titles = state.config.routines
-    .filter((r) => state.active.includes(r.id))
-    .map((r) => r.title);
-  const next = new Date(state.nextChange);
-  const meaningfulNext = next.getHours() + next.getMinutes() > 0;
-  const nextLine = meaningfulNext
-    ? `Próximo cambio a las ${clockLabel(state.nextChange, now)}`
-    : "";
+type Hero = { title: string; detail: string; on: boolean; running?: Routine[] };
+
+function hero(state: Snapshot, routines: Routine[], now: number): Hero {
   if (state.dayOff)
     return {
       title: "Día libre",
@@ -60,16 +54,29 @@ function hero(state: Snapshot, now: number) {
       detail: `Las restricciones se reanudan en ${paused} min.`,
       on: false,
     };
-  const focus = focusMinutesLeft(state, now);
-  if (focus) return { title: `Concentración · quedan ${focus} min`, detail: nextLine, on: true };
-  if (titles.length) return { title: titles.join(", "), detail: nextLine, on: true };
+  const running = routines
+    .filter((r) => state.active.includes(r.id))
+    .sort((a, b) => (state.ends[a.id] ?? Infinity) - (state.ends[b.id] ?? Infinity));
+  if (running.length)
+    return {
+      title: running.length === 1 ? running[0].title : `${running.length} rutinas activas`,
+      detail: "",
+      on: true,
+      running,
+    };
   if (!state.config.routines.some((r) => r.enabled))
     return {
       title: "Todas las rutinas desactivadas",
       detail: "Activa una rutina para empezar.",
       on: false,
     };
-  return { title: "El tiempo es tuyo", detail: nextLine, on: false };
+  return { title: "El tiempo es tuyo", detail: "Ninguna rutina está activa ahora.", on: false };
+}
+
+function endLabel(id: Routine["id"], state: Snapshot, now: number) {
+  if (id === "focus") return `quedan ${focusMinutesLeft(state, now)} min`;
+  const end = state.ends[id];
+  return end ? `hasta ${clockLabel(end, now)}` : "";
 }
 
 function routineDetail(routine: Routine, state: Snapshot, now: number) {
@@ -90,8 +97,8 @@ export function Today({ navigation }: ScreenProps<"Today">) {
   const insets = useSafeAreaInsets();
   // oxlint-disable-next-line react/purity -- The snapshot poll re-renders with the current time.
   const now = Date.now();
-  const summary = hero(state, now);
   const routines = state.config.routines.map((weekly) => state.overrides[weekly.id] ?? weekly);
+  const summary = hero(state, routines, now);
   const focusRoutine = routines.find((r) => editors[r.id].session);
   const focusRunning = !!focusRoutine?.enabled && minutesLeft(state.focusUntil, now) > 0;
   const paused = minutesLeft(state.pauseUntil, now) > 0;
@@ -117,6 +124,17 @@ export function Today({ navigation }: ScreenProps<"Today">) {
           <Text className="text-3xl font-bold text-ink">{summary.title}</Text>
           {!!summary.detail && <Text className="text-base text-muted">{summary.detail}</Text>}
         </View>
+        {summary.running && (
+          <View className="gap-2">
+            {summary.running.map((routine) => (
+              <View key={routine.id} className="flex-row items-center gap-3">
+                <Icon name={routineIcons[routine.id]} size={20} color={colors.accent} />
+                <Text className="flex-1 text-base text-ink">{routine.title}</Text>
+                <Text className="text-base text-muted">{endLabel(routine.id, state, now)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
         {!focusRunning &&
           focusRoutine &&
           (focusRoutine.enabled ? (

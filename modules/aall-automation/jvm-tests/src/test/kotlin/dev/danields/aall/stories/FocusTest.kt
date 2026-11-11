@@ -13,7 +13,11 @@ class FocusTest {
     val phone = Phone("2026-11-02T12:00", grayscale("09:00" to "18:00"), focus())
     phone.startFocus()
     assertTrue(phone.dnd)
-    assertEquals("Concentración, Escala de grises", phone.notice?.title)
+    assertEquals("2 rutinas activas", phone.notice?.title)
+    assertEquals(
+      "Concentración · hasta las 12:50\nEscala de grises · hasta las 18:00",
+      phone.notice?.text
+    )
     assertEquals(phone.now + 50 * 60000, phone.notice?.countdownTo)
   }
 
