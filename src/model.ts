@@ -25,7 +25,7 @@ export type Snapshot = {
   focusUntil: number;
   turningOff: Partial<Record<RoutineId, number>>;
   pauseUntil: number;
-  nextChange: number;
+  ends: Partial<Record<RoutineId, number>>;
   permissions: {
     accessibility: boolean;
     dnd: boolean;
@@ -215,9 +215,6 @@ export const weekdays = [
 ] as const;
 export function minutesLeft(until: number, now = Date.now()) {
   return Math.max(0, Math.ceil((until - now) / 60000));
-}
-export function focusMinutesLeft(state: Pick<Snapshot, "focusUntil" | "active">, now = Date.now()) {
-  return state.active.includes("focus") ? minutesLeft(state.focusUntil, now) : 0;
 }
 export function timeToDate(value: string) {
   const [hours, minutes] = value.split(":").map(Number);

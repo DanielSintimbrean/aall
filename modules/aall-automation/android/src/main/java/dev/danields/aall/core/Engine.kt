@@ -261,7 +261,10 @@ class Engine(private val device: Device, private val prefs: KeyValue) {
         )
       )
       .put("pauseUntil", clock.wall + d.pauseRemaining)
-      .put("nextChange", d.nextChange)
+      .put(
+        "ends",
+        JSONObject(StatusNotice.ends(d, clock).entries.associate { it.key.id to it.value })
+      )
       .put(
         "permissions",
         JSONObject().put(

@@ -88,21 +88,27 @@ class BedtimeTest {
     )
   }
 
-  @Test fun noticeLeavesOutMidnightBecauseItChangesNoRoutine() {
+  @Test fun noticeSaysBedtimeEndsAtWakeUpNotAtMidnight() {
     val phone = Phone("2026-11-02T23:00", bedtime())
-    assertEquals(StatusNotice("Descanso", ""), phone.notice)
+    assertEquals(StatusNotice("Descanso", "Hasta mañana las 07:00"), phone.notice)
   }
 
   @Test fun noticeDoesNotClaimProtectionWhenBedtimeCannotRun() {
     val missing =
       Phone("2026-11-02T23:00", bedtime()) { permissions = permissions.copy(dnd = false) }
     assertEquals(
-      StatusNotice("Descanso · requiere configuración", "Falta el permiso de No molestar."),
+      StatusNotice(
+        "Descanso · requiere configuración",
+        "Falta el permiso de No molestar.\nHasta mañana las 07:00"
+      ),
       missing.notice
     )
     val failed = Phone("2026-11-02T23:00", bedtime()) { failDnd = true }
     assertEquals(
-      StatusNotice("Descanso · requiere configuración", "No se ha podido cambiar No molestar."),
+      StatusNotice(
+        "Descanso · requiere configuración",
+        "No se ha podido cambiar No molestar.\nHasta mañana las 07:00"
+      ),
       failed.notice
     )
   }

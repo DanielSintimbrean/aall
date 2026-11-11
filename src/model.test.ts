@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import {
   clockLabel,
   dateToTime,
-  focusMinutesLeft,
   daysLabel,
   defaults,
   errorMessage,
@@ -63,11 +62,5 @@ describe("screen labels", () => {
       vi.useRealTimers();
       process.env.TZ = zone;
     }
-  });
-  it("counts focus only while the routine is running", () => {
-    const now = 1000;
-    const focusUntil = now + 10 * 60000;
-    expect(focusMinutesLeft({ focusUntil, active: ["focus"] }, now)).toBe(10);
-    expect(focusMinutesLeft({ focusUntil, active: [] }, now)).toBe(0);
   });
 });

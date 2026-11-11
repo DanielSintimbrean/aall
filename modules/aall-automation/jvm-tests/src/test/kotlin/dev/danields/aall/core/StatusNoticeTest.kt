@@ -2,6 +2,7 @@ package dev.danields.aall.core
 
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
@@ -30,6 +31,41 @@ class StatusNoticeTest {
     val notice = StatusNotice.of(d, clock)!!
     assertEquals("Escala de grises", notice.title)
     assertNull(notice.countdownTo)
+  }
+
+  @Test fun severalRoutinesListWhenEachEnds() {
+    val zone = ZoneId.of("Europe/Madrid")
+    val clock = Clock(
+      ZonedDateTime.parse("2026-11-09T23:00:00+01:00[Europe/Madrid]").toInstant().toEpochMilli(),
+      1000,
+      1,
+      zone
+    )
+    val days = listOf(1, 2, 3, 4, 5, 6, 7)
+
+    fun routine(kind: RoutineKind, start: Int, end: Int) = Routine(
+      kind,
+      kind.title,
+      true,
+      listOf(Window(LocalTime.of(start, 0), LocalTime.of(end, 0), days)),
+      emptyList(),
+      emptyList(),
+      LocalTime.of(20, 0)
+    )
+    val state = State(
+      Config(
+        50,
+        listOf(routine(RoutineKind.BEDTIME, 22, 7), routine(RoutineKind.GRAYSCALE, 21, 8))
+      )
+    )
+    val all = Permissions(accessibility = true, dnd = true, alarms = true, grayscale = true)
+    val d = Reconcile.decide(state, Environment(clock, "", emptySet(), false, all))
+    val notice = StatusNotice.of(d, clock)!!
+    assertEquals("2 rutinas activas", notice.title)
+    assertEquals(
+      "Descanso · hasta mañana las 07:00\nEscala de grises · hasta mañana las 08:00",
+      notice.text
+    )
   }
 
   @Test fun keyIgnoresDeadlineJitterButNotAMovedDeadline() {
