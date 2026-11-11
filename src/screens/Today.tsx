@@ -7,7 +7,6 @@ import {
   dateLabel,
   daysLabel,
   editors,
-  focusMinutesLeft,
   localDate,
   minutesLeft,
   windowsLabel,
@@ -74,7 +73,6 @@ function hero(state: Snapshot, routines: Routine[], now: number): Hero {
 }
 
 function endLabel(id: Routine["id"], state: Snapshot, now: number) {
-  if (id === "focus") return `quedan ${focusMinutesLeft(state, now)} min`;
   const end = state.ends[id];
   return end ? `hasta ${clockLabel(end, now)}` : "";
 }

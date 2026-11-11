@@ -216,9 +216,6 @@ export const weekdays = [
 export function minutesLeft(until: number, now = Date.now()) {
   return Math.max(0, Math.ceil((until - now) / 60000));
 }
-export function focusMinutesLeft(state: Pick<Snapshot, "focusUntil" | "active">, now = Date.now()) {
-  return state.active.includes("focus") ? minutesLeft(state.focusUntil, now) : 0;
-}
 export function timeToDate(value: string) {
   const [hours, minutes] = value.split(":").map(Number);
   // A fixed winter date, because today could be missing this time at a clock change.
