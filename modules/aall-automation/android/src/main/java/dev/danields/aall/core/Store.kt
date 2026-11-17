@@ -23,32 +23,51 @@ interface KeyValue {
 class Store(private val prefs: KeyValue) {
   fun hasConfig() = prefs.contains("config")
 
-  fun load() = State(
-    config = prefs.getString("config", null)?.let(Config::parse) ?: Config.EMPTY,
-    overrides = RoutineKind.entries.mapNotNull { kind ->
+  fun load(): State {
+    val raw = prefs.getString("config", null)
+    val config = raw?.let(Config::parse) ?: Config.EMPTY
+    val overrides = RoutineKind.entries.mapNotNull { kind ->
       prefs.getString(overrideKey(kind), null)?.let {
-        kind to parseOverride(JSONObject(it))
+        kind to JSONObject(it)
       }
-    }.toMap(),
-    daysOff = JSONArray(prefs.getString("daysOff", "[]")).let { a ->
-      (0 until a.length()).map(a::getString)
-    },
-    timers = timerKeys.mapNotNull { key ->
-      prefs.getString(key, null)?.let {
-        key to parseTimer(JSONObject(it))
-      }
-    }.toMap(),
-    bedtimeDate = prefs.getString("bedtimeDate", null)?.let(LocalDate::parse),
-    bedtimeUntil = prefs.getLong("bedtimeUntil", 0),
-    dndOwned = prefs.getBoolean("dndOwned", false)
-  )
+    }.toMap()
+    val colorApps = if (raw != null && !JSONObject(raw).has("colorApps")) {
+      (
+        config.colorApps + overrides.values.flatMap {
+          parsePackages(it.getJSONObject("routine").optJSONArray("colorApps") ?: JSONArray())
+        }
+        ).distinct()
+    } else {
+      config.colorApps
+    }
+    return State(
+      config = config.copy(colorApps = colorApps),
+      overrides = overrides.mapValues { (_, o) -> parseOverride(o) },
+      daysOff = JSONArray(prefs.getString("daysOff", "[]")).let { a ->
+        (0 until a.length()).map(a::getString)
+      },
+      timers = timerKeys.mapNotNull { key ->
+        prefs.getString(key, null)?.let {
+          key to parseTimer(JSONObject(it))
+        }
+      }.toMap(),
+      bedtimeDate = prefs.getString("bedtimeDate", null)?.let(LocalDate::parse),
+      bedtimeUntil = prefs.getLong("bedtimeUntil", 0),
+      dndOwned = prefs.getBoolean("dndOwned", false)
+    )
+  }
 
   fun save(before: State, after: State) {
-    if (before == after) return
+    val migratingColorApps = prefs.getString("config", null)?.let {
+      !JSONObject(it).has("colorApps")
+    } == true
+    if (before == after && !migratingColorApps) return
     val edit = mutableMapOf<String, Any?>()
-    if (before.config != after.config) edit["config"] = after.config.toJson().toString()
+    if (before.config != after.config || migratingColorApps) {
+      edit["config"] = after.config.toJson().toString()
+    }
     for (kind in RoutineKind.entries) {
-      if (before.overrides[kind] != after.overrides[kind]) {
+      if (before.overrides[kind] != after.overrides[kind] || migratingColorApps) {
         val o = after.overrides[kind]
         if (o == null) {
           edit[overrideKey(kind)] = null

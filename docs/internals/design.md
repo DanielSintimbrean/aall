@@ -17,6 +17,7 @@ The first app, Movent, shows the next 2 hours of buses at Cascada de les Moles (
 ## Agreed behavior
 
 - Each routine has its own blocked-app list; bedtime instead has an allowed-app list.
+- One shared color-exception list applies to focus, bedtime, and scheduled grayscale, including when they overlap. Edit it from Today; selections save immediately and do not have an "Only today" variant.
 - Phone calls, Android Settings, the launcher, and aall stay accessible.
 - Weekly schedules are normal. "Only today" makes a temporary adjustment. Saving weekly settings ends that routine's "Only today" change.
 - A day off provides a calendar day without aall restrictions, including focus and bedtime, and requires a minimum of 72 hours of advance notice before its starting midnight. Cancellation is allowed at any time. Moving a booking requires meeting the 72-hour deadline for the new date.

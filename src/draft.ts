@@ -18,7 +18,7 @@ export type DraftEdit =
   | { type: "setEarlyStart"; earlyStart: string }
   | { type: "setRamp"; field: RampField; value: string }
   | { type: "stepRamp"; field: RampField; by: number }
-  | { type: "toggleApp"; list: "apps" | "colorApps"; packageName: string };
+  | { type: "toggleApp"; packageName: string };
 
 export type RampField = "rampMinutes" | "finalIntensity";
 
@@ -84,7 +84,7 @@ export function editDraft(draft: Draft, edit: DraftEdit): Draft {
     }
     default:
       return editRoutine(draft, {
-        [edit.list]: toggled(draft.routine[edit.list], edit.packageName),
+        apps: toggled(draft.routine.apps, edit.packageName),
       });
   }
 }

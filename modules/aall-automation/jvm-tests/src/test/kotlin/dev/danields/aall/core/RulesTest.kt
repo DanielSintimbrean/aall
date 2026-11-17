@@ -3,6 +3,8 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -19,7 +21,6 @@ class RulesTest {
     "Bedtime",
     true,
     listOf(Window(LocalTime.of(22, 30), LocalTime.of(7, 0), listOf(1))),
-    emptyList(),
     emptyList(),
     LocalTime.of(20, 0)
   )
@@ -52,14 +53,6 @@ class RulesTest {
     val madrid = Rules.overrideExpiry(routine(), day, zone)
     val utc = Rules.overrideExpiry(routine(), day, ZoneId.of("UTC"))
     assertEquals(3600000L, utc - madrid)
-  }
-
-  @Test fun colorExceptionDoesNotReleaseAnotherOwnersGrayscale() {
-    fun kind(kind: RoutineKind, colorApps: List<String>) =
-      routine().copy(kind = kind, colorApps = colorApps)
-    assertFalse(kind(RoutineKind.GRAYSCALE, listOf("maps")).requestsGrayscale("maps"))
-    assertTrue(kind(RoutineKind.FOCUS, emptyList()).requestsGrayscale("maps"))
-    assertFalse(kind(RoutineKind.ACCESS, emptyList()).requestsGrayscale("maps"))
   }
 
   @Test fun overnightBelongsToStartingWeekday() {
@@ -171,7 +164,9 @@ class RulesTest {
       val parsed = Routine.parse(saved).toJson()
       assertEquals(titles[saved.getString("id")], parsed.getString("title"))
       saved.keys().forEach { key ->
-        if (key != "title") assertEquals(saved.get(key).toString(), parsed.get(key).toString())
+        if (key != "title" && key != "colorApps") {
+          assertEquals(saved.get(key).toString(), parsed.get(key).toString())
+        }
       }
     }
   }
@@ -184,6 +179,22 @@ class RulesTest {
     assertEquals(
       "22:30",
       bedtime.toJson().getJSONArray("windows").getJSONObject(0).getString("start")
+    )
+  }
+
+  @Test fun oldColorListsMergeWithoutDuplicatesAndCanBeCleared() {
+    val saved = JSONObject(config(validRoutines.joinToString(",")))
+    saved.getJSONArray("routines").getJSONObject(1)
+      .put("colorApps", JSONArray(listOf("maps", "camera")))
+    saved.getJSONArray("routines").getJSONObject(2)
+      .put("colorApps", JSONArray(listOf("maps", "photos")))
+    val migrated = Config.parse(saved.toString()).toJson()
+    assertEquals(listOf("maps", "camera", "photos"), migrated.getJSONArray("colorApps").toList())
+    migrated.getJSONArray("routines").forEach { assertFalse((it as JSONObject).has("colorApps")) }
+    saved.put("colorApps", JSONArray())
+    assertEquals(
+      emptyList<String>(),
+      Config.parse(saved.toString()).toJson().getJSONArray("colorApps").toList()
     )
   }
 

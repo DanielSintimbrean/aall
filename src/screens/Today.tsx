@@ -193,6 +193,13 @@ export function Today({ navigation }: ScreenProps<"Today">) {
       <Section title="Más">
         <Card>
           <Row
+            icon="palette-outline"
+            title="Conservar el color en"
+            subtitle={`${state.config.colorApps.length} aplicaciones · para todas las rutinas`}
+            onPress={() => navigation.navigate("AppPicker", { list: "colorApps" })}
+          />
+          <Divider />
+          <Row
             icon="calendar-heart"
             title="Días libres"
             subtitle={upcoming[0] ? `Próximo: ${dateLabel(upcoming[0])}` : "Sin reservas"}

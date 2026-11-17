@@ -98,7 +98,9 @@ object Reconcile {
     val suppressed = Rules.suppress(dayOff, pauseRemaining)
     val routines = running.filter { !suppressed || !it.kind.restriction }
     val dnd = routines.any { it.kind.usesDnd }
-    val gray = routines.any { it.requestsGrayscale(env.foregroundApp) }
+    val colorExceptions = state.config.colorApps.isNotEmpty()
+    val gray =
+      routines.any { it.kind.usesGrayscale } && env.foregroundApp !in state.config.colorApps
     val grayscale =
       (gray || remaining(state, Timer.GRAY_TEST, clock) > 0) && !dayOff && pauseRemaining <= 0
     val blocked = env.foreground !in env.alwaysAllowed && routines.any {
@@ -112,13 +114,17 @@ object Reconcile {
       setGrayscale = grayscale.takeIf { env.permissions.grayscale },
       blocked = blocked,
       nextChange = nextChange(state, clock),
-      errors = errors(routines, dnd, gray, env.permissions),
+      errors = errors(routines, dnd, gray, colorExceptions, env.permissions),
       nightLight = routines.firstOrNull { it.kind == RoutineKind.NIGHT_LIGHT }?.let { r ->
         val since = Rules.activeSince(r, now, clock.zone, state.overrides[r.kind]?.date)
         since?.let { NightLightRamp(it, r.rampMinutes, r.finalIntensity) }
       },
       statuses = state.config.routines.associate { base ->
-        base.kind to effective(state, base).first.status(env.permissions, base.kind in runningKinds)
+        base.kind to effective(state, base).first.status(
+          env.permissions,
+          base.kind in runningKinds,
+          colorExceptions
+        )
       }
     )
   }
@@ -224,21 +230,26 @@ object Reconcile {
     return state.copy(bedtimeUntil = end, bedtimeDate = date.takeIf { end > clock.wall })
   }
 
-  private fun errors(routines: List<Routine>, dnd: Boolean, gray: Boolean, p: Permissions) =
-    buildList {
-      if (routines.any { it.kind.appRule != AppRule.NONE } && !p.accessibility) {
-        add("El bloqueo de aplicaciones necesita el permiso de accesibilidad.")
-      }
-      if (dnd && !p.dnd) add("Falta el permiso de No molestar.")
-      if (gray && routines.any { it.colorApps.isNotEmpty() } && !p.accessibility) {
-        add("Las excepciones de color necesitan el permiso de accesibilidad.")
-      }
-      if (gray && !p.grayscale) add("La escala de grises necesita el permiso mediante ADB.")
-      if (routines.any { it.kind == RoutineKind.NIGHT_LIGHT } && !p.grayscale) {
-        add("La luz nocturna necesita el permiso mediante ADB.")
-      }
-      if (!p.alarms) add("Falta el permiso de alarmas exactas; los cambios pueden retrasarse.")
+  private fun errors(
+    routines: List<Routine>,
+    dnd: Boolean,
+    gray: Boolean,
+    colorExceptions: Boolean,
+    p: Permissions
+  ) = buildList {
+    if (routines.any { it.kind.appRule != AppRule.NONE } && !p.accessibility) {
+      add("El bloqueo de aplicaciones necesita el permiso de accesibilidad.")
     }
+    if (dnd && !p.dnd) add("Falta el permiso de No molestar.")
+    if (gray && colorExceptions && !p.accessibility) {
+      add("Las excepciones de color necesitan el permiso de accesibilidad.")
+    }
+    if (gray && !p.grayscale) add("La escala de grises necesita el permiso mediante ADB.")
+    if (routines.any { it.kind == RoutineKind.NIGHT_LIGHT } && !p.grayscale) {
+      add("La luz nocturna necesita el permiso mediante ADB.")
+    }
+    if (!p.alarms) add("Falta el permiso de alarmas exactas; los cambios pueden retrasarse.")
+  }
 
   private fun nextChange(state: State, clock: Clock): Long {
     val now = clock.wall

@@ -4,6 +4,7 @@ import dev.danields.aall.harness.FakeDevice
 import dev.danields.aall.harness.Phone
 import dev.danields.aall.harness.access
 import dev.danields.aall.harness.bedtime
+import dev.danields.aall.harness.focus
 import dev.danields.aall.harness.grayscale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -44,7 +45,7 @@ class BlockingTest {
   }
 
   @Test fun theShadeKeepsTheAppColorExceptionButReleasesTheBlockingScreen() {
-    val phone = Phone("2026-11-02T23:00", bedtime(colorApps = listOf("maps")))
+    val phone = Phone("2026-11-02T23:00", bedtime(), colorApps = listOf("maps"))
     phone.open("maps")
     assertTrue(phone.blocked)
     assertFalse(phone.grayscale)
@@ -69,13 +70,30 @@ class BlockingTest {
     assertEquals("Es hora de descansar", phone.device.block?.title)
   }
 
-  @Test fun aColorExceptionOnlyReleasesItsOwnRoutinesGrayscale() {
+  @Test fun aColorExceptionReleasesEveryRoutinesGrayscale() {
     val phone = Phone(
       "2026-11-02T23:00",
-      bedtime(colorApps = listOf("maps")),
-      grayscale("21:00" to "07:00")
+      bedtime(),
+      grayscale("21:00" to "07:00"),
+      focus()
     )
+    phone.startFocus()
+    phone.overrideToday(grayscale("22:00" to "07:00"))
     phone.open("maps")
+    assertTrue(phone.grayscale)
+    phone.setColorApps("maps")
+    assertFalse(phone.grayscale)
+    assertTrue(phone.blocked)
+    assertTrue(phone.dnd)
+    phone.saveWeekly(bedtime())
+    assertFalse(phone.grayscale)
+    phone.open("other")
+    assertTrue(phone.grayscale)
+    phone.open("maps")
+    phone.reboot()
+    phone.open("maps")
+    assertFalse(phone.grayscale)
+    phone.setColorApps()
     assertTrue(phone.grayscale)
   }
 

@@ -9,12 +9,11 @@ export type Routine = {
   enabled: boolean;
   windows: Window[];
   apps: string[];
-  colorApps: string[];
   earlyStart: string;
   rampMinutes: number;
   finalIntensity: number;
 };
-export type Config = { version: 1; focusMinutes: number; routines: Routine[] };
+export type Config = { version: 1; focusMinutes: number; colorApps: string[]; routines: Routine[] };
 export type InstalledApp = { packageName: string; label: string };
 export type Snapshot = {
   config: Config;
@@ -51,7 +50,6 @@ type Editor = {
   session: boolean;
   chargingStart: boolean;
   appList?: "allowed" | "blocked";
-  colorExceptions: boolean;
   ramp?: boolean;
   noTurnOffNotice?: boolean;
 };
@@ -65,7 +63,6 @@ export const editors: Record<RoutineId, Editor> = {
     session: false,
     chargingStart: false,
     appList: "blocked",
-    colorExceptions: false,
   },
   focus: {
     hint: "Bloquea las aplicaciones seleccionadas y activa No molestar y la escala de grises durante la sesión.",
@@ -73,7 +70,6 @@ export const editors: Record<RoutineId, Editor> = {
     session: true,
     chargingStart: false,
     appList: "blocked",
-    colorExceptions: true,
   },
   bedtime: {
     hint: "Bloquea las aplicaciones que no están permitidas y activa No molestar y la escala de grises.",
@@ -81,7 +77,6 @@ export const editors: Record<RoutineId, Editor> = {
     session: false,
     chargingStart: true,
     appList: "allowed",
-    colorExceptions: true,
   },
   grayscale: {
     hint: "La pantalla se muestra en gris durante el horario activo, excepto en las aplicaciones que conservan el color.",
@@ -89,14 +84,12 @@ export const editors: Record<RoutineId, Editor> = {
     noHoursWarning: "Sin un horario activo, la escala de grises nunca se activa.",
     session: false,
     chargingStart: false,
-    colorExceptions: true,
   },
   nightLight: {
     hint: "El filtro cálido empieza al inicio del horario, aumenta poco a poco y se apaga al final.",
     windowLabel: "Horario activo",
     session: false,
     chargingStart: false,
-    colorExceptions: false,
     ramp: true,
     noTurnOffNotice: true,
   },
@@ -113,17 +106,17 @@ const social = [
   "com.facebook.katana",
   "com.instagram.barcelona",
 ];
-const colorApps = [
-  "com.google.android.GoogleCamera",
-  "app.grapheneos.camera",
-  "com.sec.android.app.camera",
-  "com.google.android.apps.photos",
-  "com.google.android.apps.maps",
-];
 /** Native names each routine, so the defaults carry no title. */
 export const defaults: Omit<Config, "routines"> & { routines: Omit<Routine, "title">[] } = {
   version: 1,
   focusMinutes: 50,
+  colorApps: [
+    "com.google.android.GoogleCamera",
+    "app.grapheneos.camera",
+    "com.sec.android.app.camera",
+    "com.google.android.apps.photos",
+    "com.google.android.apps.maps",
+  ],
   routines: [
     {
       id: "access",
@@ -133,7 +126,6 @@ export const defaults: Omit<Config, "routines"> & { routines: Omit<Routine, "tit
         { start: "19:00", end: "20:00", days: all },
       ],
       apps: social,
-      colorApps: [],
       earlyStart: "20:00",
       rampMinutes: 90,
       finalIntensity: 50,
@@ -143,7 +135,6 @@ export const defaults: Omit<Config, "routines"> & { routines: Omit<Routine, "tit
       enabled: false,
       windows: [],
       apps: social,
-      colorApps,
       earlyStart: "20:00",
       rampMinutes: 90,
       finalIntensity: 50,
@@ -160,7 +151,6 @@ export const defaults: Omit<Config, "routines"> & { routines: Omit<Routine, "tit
         "com.spotify.music",
         "com.google.android.apps.maps",
       ],
-      colorApps,
       earlyStart: "20:00",
       rampMinutes: 90,
       finalIntensity: 50,
@@ -174,7 +164,6 @@ export const defaults: Omit<Config, "routines"> & { routines: Omit<Routine, "tit
         { start: "21:00", end: "07:00", days: all },
       ],
       apps: [],
-      colorApps,
       earlyStart: "20:00",
       rampMinutes: 90,
       finalIntensity: 50,
@@ -184,7 +173,6 @@ export const defaults: Omit<Config, "routines"> & { routines: Omit<Routine, "tit
       enabled: false,
       windows: [{ start: "21:00", end: "07:00", days: all }],
       apps: [],
-      colorApps: [],
       earlyStart: "20:00",
       rampMinutes: 90,
       finalIntensity: 50,

@@ -18,8 +18,13 @@ class TodayTest {
   private val all = Permissions(accessibility = true, dnd = true, alarms = true, grayscale = true)
   private val none = Permissions(false, false, false, false)
 
-  private fun status(routine: Routine, permissions: Permissions = all) =
-    Phone("2026-11-02T12:00", routine) { this.permissions = permissions }.status(routine.kind)
+  private fun status(
+    routine: Routine,
+    permissions: Permissions = all,
+    colorApps: List<String> = emptyList()
+  ) = Phone("2026-11-02T12:00", routine, colorApps = colorApps) {
+    this.permissions = permissions
+  }.status(routine.kind)
 
   @Test fun statusReportsWhatEachKindRequires() {
     val social = listOf("social")
@@ -31,7 +36,7 @@ class TodayTest {
     assertEquals("ready", status(grayscale(), all.copy(accessibility = false)))
     assertEquals(
       "needsSetup",
-      status(grayscale(colorApps = listOf("maps")), all.copy(accessibility = false))
+      status(grayscale(), all.copy(accessibility = false), colorApps = listOf("maps"))
     )
     assertEquals(
       "ready",

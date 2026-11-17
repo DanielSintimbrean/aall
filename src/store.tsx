@@ -67,10 +67,10 @@ export function StoreProvider({
       native.initialize(
         JSON.stringify({
           ...defaults,
+          colorApps: defaults.colorApps.filter((pkg) => packages.has(pkg)),
           routines: defaults.routines.map((r) => ({
             ...r,
             apps: r.apps.filter((pkg) => packages.has(pkg)),
-            colorApps: r.colorApps.filter((pkg) => packages.has(pkg)),
           })),
         }),
       );
