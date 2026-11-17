@@ -27,7 +27,6 @@ import {
   Card,
   Chip,
   DayPicker,
-  Divider,
   FieldError,
   Icon,
   KeyboardScreen,
@@ -349,26 +348,15 @@ export function RoutineEditor({ navigation }: ScreenProps<"Routine">) {
           </Section>
         )}
 
-        {(editor.appList || editor.colorExceptions) && (
+        {editor.appList && (
           <Section title="Aplicaciones">
             <Card>
-              {editor.appList && (
-                <Row
-                  icon={editor.appList === "allowed" ? "check-circle-outline" : "cancel"}
-                  title={`Aplicaciones ${editor.appList === "allowed" ? "permitidas" : "bloqueadas"}`}
-                  subtitle={appNames(routine.apps, apps)}
-                  onPress={() => navigation.navigate("AppPicker", { list: "apps" })}
-                />
-              )}
-              {editor.appList && editor.colorExceptions && <Divider />}
-              {editor.colorExceptions && (
-                <Row
-                  icon="palette-outline"
-                  title="Conservar el color en"
-                  subtitle={appNames(routine.colorApps, apps)}
-                  onPress={() => navigation.navigate("AppPicker", { list: "colorApps" })}
-                />
-              )}
+              <Row
+                icon={editor.appList === "allowed" ? "check-circle-outline" : "cancel"}
+                title={`Aplicaciones ${editor.appList === "allowed" ? "permitidas" : "bloqueadas"}`}
+                subtitle={appNames(routine.apps, apps)}
+                onPress={() => navigation.navigate("AppPicker", { list: "apps" })}
+              />
             </Card>
           </Section>
         )}

@@ -20,7 +20,7 @@ class BlockNoticeTest {
   )
 
   private fun routine(kind: RoutineKind, windows: List<Window>, apps: List<String>) =
-    Routine(kind, kind.title, true, windows, apps, emptyList(), LocalTime.of(20, 0))
+    Routine(kind, kind.title, true, windows, apps, LocalTime.of(20, 0))
 
   private val access = routine(
     RoutineKind.ACCESS,

@@ -69,7 +69,7 @@ class BedtimeTest {
 
   @Test fun missingPermissionsSkipEffectsAndReportErrors() {
     val phone =
-      Phone("2026-11-02T23:00", bedtime(apps = listOf("clock"), colorApps = listOf("maps"))) {
+      Phone("2026-11-02T23:00", bedtime(apps = listOf("clock")), colorApps = listOf("maps")) {
         permissions = Permissions(false, false, false, false)
       }
     phone.open("game")

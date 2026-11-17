@@ -5,6 +5,7 @@ type Native = {
   getSnapshot(): string;
   reconcile(): void;
   setFocusMinutes(minutes: number): void;
+  setColorApps(packages: string): void;
   saveWeekly(routine: string): void;
   installedApps(): InstalledApp[];
   appIcons(): Promise<Record<string, string>>;

@@ -24,6 +24,7 @@ class AallAutomationModule : Module() {
     Function("getSnapshot") { engine(context).snapshot().toString() }
     Function("reconcile") { engine(context).reconcile() }
     Function("setFocusMinutes") { minutes: Int -> engine(context).setFocusMinutes(minutes) }
+    Function("setColorApps") { raw: String -> engine(context).setColorApps(raw) }
     Function("saveWeekly") { raw: String -> engine(context).saveWeekly(raw) }
     Function("requestTurnOff") { id: String -> engine(context).requestTurnOff(id) }
     Function("cancelTurnOff") { id: String -> engine(context).cancelTurnOff(id) }

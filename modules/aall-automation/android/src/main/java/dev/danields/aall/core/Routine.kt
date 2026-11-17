@@ -74,13 +74,20 @@ data class Window(val start: LocalTime, val end: LocalTime, val days: List<Int>)
   }
 }
 
+fun parsePackages(apps: JSONArray): List<String> {
+  require(apps.length() <= 1000)
+  val packageName = Regex("[A-Za-z0-9_.]+")
+  return (0 until apps.length()).map {
+    apps.getString(it).also { app -> require(app.matches(packageName)) }
+  }
+}
+
 data class Routine(
   val kind: RoutineKind,
   val title: String,
   val enabled: Boolean,
   val windows: List<Window>,
   val apps: List<String>,
-  val colorApps: List<String>,
   val earlyStart: LocalTime,
   val rampMinutes: Int = 90,
   val finalIntensity: Int = 50
@@ -91,18 +98,17 @@ data class Routine(
     AppRule.ALLOW_LISTED -> pkg !in apps
   }
 
-  fun requestsGrayscale(foreground: String) = kind.usesGrayscale && foreground !in colorApps
+  fun needsAccessibility(colorExceptions: Boolean) =
+    kind.appRule != AppRule.NONE || (kind.usesGrayscale && colorExceptions)
 
-  fun needsAccessibility() = kind.appRule != AppRule.NONE || colorApps.isNotEmpty()
-
-  fun needsSetup(p: Permissions) = !p.alarms ||
-    (needsAccessibility() && !p.accessibility) ||
+  fun needsSetup(p: Permissions, colorExceptions: Boolean) = !p.alarms ||
+    (needsAccessibility(colorExceptions) && !p.accessibility) ||
     ((kind.usesGrayscale || kind == RoutineKind.NIGHT_LIGHT) && !p.grayscale) ||
     (kind.usesDnd && !p.dnd)
 
-  fun status(p: Permissions, running: Boolean) = when {
+  fun status(p: Permissions, running: Boolean, colorExceptions: Boolean) = when {
     !enabled -> RoutineStatus.DISABLED
-    needsSetup(p) -> RoutineStatus.NEEDS_SETUP
+    needsSetup(p, colorExceptions) -> RoutineStatus.NEEDS_SETUP
     running -> RoutineStatus.ACTIVE
     else -> RoutineStatus.READY
   }
@@ -110,21 +116,11 @@ data class Routine(
   fun toJson() = JSONObject()
     .put("id", kind.id).put("title", title).put("enabled", enabled)
     .put("windows", JSONArray(windows.map { it.toJson() }))
-    .put("apps", JSONArray(apps)).put("colorApps", JSONArray(colorApps))
+    .put("apps", JSONArray(apps))
     .put("earlyStart", earlyStart.toString())
     .put("rampMinutes", rampMinutes).put("finalIntensity", finalIntensity)
 
   companion object {
-    private val packageName = Regex("[A-Za-z0-9_.]+")
-
-    private fun packages(r: JSONObject, key: String): List<String> {
-      val apps = r.getJSONArray(key)
-      require(apps.length() <= 1000)
-      return (0 until apps.length()).map {
-        apps.getString(it).also { app -> require(app.matches(packageName)) }
-      }
-    }
-
     fun parse(r: JSONObject): Routine {
       val kind = RoutineKind.fromId(r.getString("id"))
       val earlyStart = LocalTime.parse(r.getString("earlyStart"))
@@ -144,8 +140,7 @@ data class Routine(
         kind.title,
         r.getBoolean("enabled"),
         windows,
-        packages(r, "apps"),
-        packages(r, "colorApps"),
+        parsePackages(r.getJSONArray("apps")),
         earlyStart,
         rampMinutes,
         finalIntensity
@@ -154,7 +149,11 @@ data class Routine(
   }
 }
 
-data class Config(val focusMinutes: Int, val routines: List<Routine>) {
+data class Config(
+  val focusMinutes: Int,
+  val routines: List<Routine>,
+  val colorApps: List<String> = emptyList()
+) {
   fun toJson() = JSONObject().put("version", 1).put("focusMinutes", focusMinutes).put(
     "routines",
     JSONArray(
@@ -162,7 +161,7 @@ data class Config(val focusMinutes: Int, val routines: List<Routine>) {
         it.toJson()
       }
     )
-  )
+  ).put("colorApps", JSONArray(colorApps))
 
   fun with(routine: Routine) = copy(
     routines = routines.map {
@@ -191,7 +190,6 @@ data class Config(val focusMinutes: Int, val routines: List<Routine>) {
       false,
       listOf(Window(LocalTime.of(21, 0), LocalTime.of(7, 0), listOf(1, 2, 3, 4, 5, 6, 7))),
       emptyList(),
-      emptyList(),
       LocalTime.of(20, 0)
     )
 
@@ -199,10 +197,16 @@ data class Config(val focusMinutes: Int, val routines: List<Routine>) {
       val c = JSONObject(raw)
       require(c.getInt("version") == 1)
       val rs = c.getJSONArray("routines")
-      val routines = (0 until rs.length()).map { Routine.parse(rs.getJSONObject(it)) }
+      val stored = (0 until rs.length()).map(rs::getJSONObject)
+      val routines = stored.map(Routine::parse)
+      val colorApps = if (c.has("colorApps")) {
+        parsePackages(c.getJSONArray("colorApps"))
+      } else {
+        stored.flatMap { parsePackages(it.optJSONArray("colorApps") ?: JSONArray()) }.distinct()
+      }
       // Configs saved before Night Light existed lack it, and updating must keep them.
       val added = listOf(defaultNightLight).filter { new -> routines.none { it.kind == new.kind } }
-      return Config(c.getInt("focusMinutes"), routines + added).validated()
+      return Config(c.getInt("focusMinutes"), routines + added, colorApps).validated()
     }
   }
 }

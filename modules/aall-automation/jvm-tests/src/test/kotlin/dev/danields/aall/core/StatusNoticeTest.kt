@@ -14,7 +14,7 @@ class StatusNoticeTest {
     val clock = Clock(1_793_617_200_000, 1000, 1, ZoneId.of("Europe/Madrid"))
 
     fun routine(kind: RoutineKind, enabled: Boolean, windows: List<Window>) =
-      Routine(kind, kind.title, enabled, windows, emptyList(), emptyList(), LocalTime.of(20, 0))
+      Routine(kind, kind.title, enabled, windows, emptyList(), LocalTime.of(20, 0))
     val allDay = Window(LocalTime.MIN, LocalTime.of(23, 59), listOf(1, 2, 3, 4, 5, 6, 7))
     val state = State(
       Config(
@@ -48,7 +48,6 @@ class StatusNoticeTest {
       kind.title,
       true,
       listOf(Window(LocalTime.of(start, 0), LocalTime.of(end, 0), days)),
-      emptyList(),
       emptyList(),
       LocalTime.of(20, 0)
     )

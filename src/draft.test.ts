@@ -63,18 +63,16 @@ describe("draft edits", () => {
     const removed = apply("access", { type: "removeWindow", index: 0 }).routine.windows;
     expect(removed.map((w) => w.start)).toEqual(["19:00"]);
   });
-  it("toggles apps in the named list only", () => {
-    const { apps, colorApps } = apply("focus", {
+  it("toggles apps", () => {
+    const { apps } = apply("focus", {
       type: "toggleApp",
-      list: "colorApps",
       packageName: "a.b",
     }).routine;
-    expect(colorApps.at(-1)).toBe("a.b");
-    expect(apps).toEqual(begin("focus").routine.apps);
+    expect(apps.at(-1)).toBe("a.b");
     const off = apply(
       "focus",
-      { type: "toggleApp", list: "apps", packageName: "a.b" },
-      { type: "toggleApp", list: "apps", packageName: "a.b" },
+      { type: "toggleApp", packageName: "a.b" },
+      { type: "toggleApp", packageName: "a.b" },
     );
     expect(off.routine.apps).toEqual(begin("focus").routine.apps);
   });

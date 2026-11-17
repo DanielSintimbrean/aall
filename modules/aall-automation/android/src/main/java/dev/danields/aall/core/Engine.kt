@@ -26,6 +26,10 @@ class Engine(private val device: Device, private val prefs: KeyValue) {
     it.copy(config = it.config.copy(focusMinutes = minutes).validated())
   }
 
+  fun setColorApps(raw: String) = update {
+    it.copy(config = it.config.copy(colorApps = parsePackages(JSONArray(raw))))
+  }
+
   fun saveWeekly(raw: String) = update {
     Reconcile.saveWeekly(it, Routine.parse(JSONObject(raw))).also { saved ->
       saved.config.validated()

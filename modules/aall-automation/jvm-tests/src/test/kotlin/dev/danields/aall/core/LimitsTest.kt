@@ -17,11 +17,12 @@ class LimitsTest {
   private fun routine(kind: RoutineKind) = JSONObject()
     .put("id", kind.id).put("enabled", false)
     .put("windows", JSONArray(listOf(window())))
-    .put("apps", JSONArray()).put("colorApps", JSONArray())
+    .put("apps", JSONArray())
     .put("earlyStart", "20:00").put("rampMinutes", 90).put("finalIntensity", 50)
 
   private fun config(focusMinutes: Int) = JSONObject().put("version", 1)
     .put("focusMinutes", focusMinutes)
+    .put("colorApps", JSONArray())
     .put("routines", JSONArray(RoutineKind.entries.map(::routine)))
 
   private fun accepts(block: () -> Unit) = runCatching(block).isSuccess
@@ -81,7 +82,14 @@ class LimitsTest {
   @Test fun appsPerList() {
     val max = limits.getInt("maxAppsPerList")
     for (list in listOf("apps", "colorApps")) {
-      fun with(n: Int) = parses(RoutineKind.BEDTIME) { put(list, JSONArray(List(n) { "a.b$it" })) }
+      fun with(n: Int): Boolean {
+        val apps = JSONArray(List(n) { "a.b$it" })
+        return if (list == "apps") {
+          parses(RoutineKind.BEDTIME) { put(list, apps) }
+        } else {
+          accepts { Config.parse(config(50).put(list, apps).toString()) }
+        }
+      }
       assertEquals(list, listOf(true, false), listOf(max, max + 1).map(::with))
     }
   }

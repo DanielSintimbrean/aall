@@ -13,6 +13,7 @@ import dev.danields.aall.core.WindowType
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
+import org.json.JSONArray
 import org.json.JSONObject
 
 val zone: ZoneId = ZoneId.of("Europe/Madrid")
@@ -28,17 +29,15 @@ private fun routine(
   kind: RoutineKind,
   windows: List<Window>,
   apps: List<String> = emptyList(),
-  colorApps: List<String> = emptyList(),
   enabled: Boolean = true
-) = Routine(kind, kind.title, enabled, windows, apps, colorApps, LocalTime.of(20, 0))
+) = Routine(kind, kind.title, enabled, windows, apps, LocalTime.of(20, 0))
 
 fun bedtime(
   hours: Pair<String, String> = "22:30" to "07:00",
   apps: List<String> = emptyList(),
-  colorApps: List<String> = emptyList(),
   days: List<Int> = allDays,
   enabled: Boolean = true
-) = routine(RoutineKind.BEDTIME, listOf(window(hours, days)), apps, colorApps, enabled)
+) = routine(RoutineKind.BEDTIME, listOf(window(hours, days)), apps, enabled)
 
 fun focus(apps: List<String> = emptyList(), enabled: Boolean = true) =
   routine(RoutineKind.FOCUS, emptyList(), apps, enabled = enabled)
@@ -53,9 +52,8 @@ fun access(
 fun grayscale(
   vararg hours: Pair<String, String>,
   apps: List<String> = emptyList(),
-  colorApps: List<String> = emptyList(),
   enabled: Boolean = true
-) = routine(RoutineKind.GRAYSCALE, hours.map { window(it) }, apps, colorApps, enabled)
+) = routine(RoutineKind.GRAYSCALE, hours.map { window(it) }, apps, enabled)
 
 fun nightLight(hours: Pair<String, String> = "21:00" to "07:00", enabled: Boolean = true) =
   routine(RoutineKind.NIGHT_LIGHT, listOf(window(hours)), enabled = enabled)
@@ -64,7 +62,12 @@ fun nightLight(hours: Pair<String, String> = "21:00" to "07:00", enabled: Boolea
  * A phone running aall from [start], set up with [routines]; every other routine is off. Time moves
  * only through [advanceTo], which fires the alarms Engine scheduled, so a missed boundary shows.
  */
-class Phone(start: String, vararg routines: Routine, setup: FakeDevice.() -> Unit = {}) {
+class Phone(
+  start: String,
+  vararg routines: Routine,
+  colorApps: List<String> = emptyList(),
+  setup: FakeDevice.() -> Unit = {}
+) {
   val device = FakeDevice(Clock(at(start), 1000, 1, zone)).apply(setup)
   val store = MemoryStore()
   val engine = Engine(device, store)
@@ -75,7 +78,8 @@ class Phone(start: String, vararg routines: Routine, setup: FakeDevice.() -> Uni
       RoutineKind.entries.map { kind ->
         routines.firstOrNull { it.kind == kind }
           ?: routine(kind, listOf(window("22:30" to "07:00")), enabled = false)
-      }
+      },
+      colorApps
     )
     engine.initialize(config.toJson().toString())
   }
@@ -201,6 +205,9 @@ class Phone(start: String, vararg routines: Routine, setup: FakeDevice.() -> Uni
   fun startFocus() = engine.focus()
 
   fun setFocusMinutes(minutes: Int) = engine.setFocusMinutes(minutes)
+
+  fun setColorApps(vararg packages: String) =
+    engine.setColorApps(JSONArray(packages.toList()).toString())
 
   fun testGrayscale(on: Boolean) = engine.testGray(on)
 

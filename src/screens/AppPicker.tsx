@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FlatList, Image, Pressable, Text, View } from "react-native";
 import { editors } from "../model";
+import { native } from "../native";
 import type { ScreenProps } from "../navigation";
 import { useDraft, useStore } from "../store";
 import { colors } from "../theme";
@@ -10,23 +11,23 @@ const rowHeight = 64;
 
 export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
   const { list } = route.params;
-  const { apps, icons, loadIcons } = useStore();
+  const { state, apps, icons, loadIcons, act } = useStore();
   const { draft, dispatch } = useDraft();
   const [query, setQuery] = useState("");
-  const selected = draft?.routine[list] ?? [];
+  const shared = list === "colorApps";
+  const selected = shared ? state.config.colorApps : (draft?.routine.apps ?? []);
   const routineId = draft?.routine.id;
   useEffect(() => {
     loadIcons();
   }, [loadIcons]);
   useEffect(() => {
-    if (routineId)
+    if (shared || routineId)
       navigation.setOptions({
-        title:
-          list === "colorApps"
-            ? "Conservar el color en"
-            : `Aplicaciones ${editors[routineId].appList === "allowed" ? "permitidas" : "bloqueadas"}`,
+        title: shared
+          ? "Conservar el color en"
+          : `Aplicaciones ${routineId && editors[routineId].appList === "allowed" ? "permitidas" : "bloqueadas"}`,
       });
-  }, [navigation, list, routineId]);
+  }, [navigation, shared, routineId]);
   // Ordered once on open, so a row doesn't jump away from the finger when it is toggled.
   const [initial] = useState(() => new Set(selected));
   const ordered = useMemo(
@@ -44,10 +45,26 @@ export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
   const visible = ordered.filter((app) =>
     `${app.label} ${app.packageName}`.toLowerCase().includes(needle),
   );
-  if (!draft) return null;
+  if (!shared && !draft) return null;
+  const toggle = (packageName: string) => {
+    if (shared) {
+      const next = selected.includes(packageName)
+        ? selected.filter((pkg) => pkg !== packageName)
+        : [...selected, packageName];
+      act(() => native!.setColorApps(JSON.stringify(next)));
+    } else {
+      dispatch({ type: "toggleApp", packageName });
+    }
+  };
   return (
     <KeyboardScreen>
       <View className="px-4 pb-2 pt-2">
+        {shared && (
+          <Text className="pb-4 text-base text-muted">
+            Se aplica a Concentración, Descanso y Escala de grises. Los cambios se guardan al
+            seleccionar.
+          </Text>
+        )}
         <SearchInput value={query} onChangeText={setQuery} placeholder="Buscar aplicaciones" />
       </View>
       <FlatList
@@ -71,7 +88,7 @@ export function AppPicker({ navigation, route }: ScreenProps<"AppPicker">) {
               accessibilityLabel={item.label}
               accessibilityState={{ checked }}
               android_ripple={{ color: "rgba(255,255,255,0.12)" }}
-              onPress={() => dispatch({ type: "toggleApp", list, packageName: item.packageName })}
+              onPress={() => toggle(item.packageName)}
               style={{ height: rowHeight }}
               className="flex-row items-center gap-3 px-4"
             >
